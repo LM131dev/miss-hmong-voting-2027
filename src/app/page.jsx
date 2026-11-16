@@ -1517,16 +1517,20 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* 8-TIER VOTE PACKAGES SHOWCASE */}
+          {/* 8-TIER VOTE PACKAGES SHOWCASE (INFORMATIONAL DISPLAY ONLY - NOT CLICKABLE) */}
           <div className="rounded-[32px] bg-white border border-[#9333ea]/25 p-6 sm:p-8 shadow-xl">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
               <div>
                 <span className="inline-flex items-center text-xs font-black uppercase tracking-wider text-[#6b1699]">
-                  <span>OFFICIAL VOTING PACKAGES (8 ລະດັບແພັກເກັດໂຫວດ)</span>
+                  <ShieldCheck className="w-4 h-4 mr-1.5 text-[#9333ea]" />
+                  <span>ຕາຕະລາງອັດຕາແພັກເກັດໂຫວດຢ່າງເປັນທາງການ (Official Voting Rates)</span>
                 </span>
                 <h3 className="text-xl sm:text-2xl font-black text-[#240638] mt-1">
-                  ເລືອກແພັກເກັດຄະແນນໂຫວດ • ຍິ່ງແພັກເກັດໃຫຍ່ ຍິ່ງຄຸ້ມຄ່າ!
+                  ອັດຕາຄະແນນ ແລະ ລາຄາແພັກເກັດ (8 ລະດັບ)
                 </h3>
+                <p className="text-xs text-[#644180] font-medium mt-1">
+                  ℹ️ ຕາຕະລາງແຈ້ງອັດຕາລາຄາ • ເລືອກໂຫວດໃຫ້ຜູ້ເຂົ້າປະກວດທີ່ທ່ານຊື່ນຊອບໄດ້ທີ່ລາຍຊື່ສາວງາມ (HM 01 - HM 20) ດ້ານລຸ່ມ 👇
+                </p>
               </div>
 
               <div className="flex items-center gap-2 self-start md:self-auto bg-[#f8f4fc] p-1.5 rounded-2xl border border-[#9333ea]/25">
@@ -1563,15 +1567,12 @@ export default function HomePage() {
                 return (
                   <div
                     key={pkg.id || idx}
-                    onClick={() => {
-                      if (rankedContestants[0]) openVoteModal(rankedContestants[0], pkg);
-                    }}
-                    className={`relative rounded-2xl p-4 flex flex-col justify-between text-center border transition cursor-pointer hover:-translate-y-0.5 hover:shadow-md ${
+                    className={`relative rounded-2xl p-4 flex flex-col justify-between text-center border select-none ${
                       isPopular
-                        ? "bg-[#f5edfc] border-[#9333ea] ring-1 ring-[#9333ea]/30"
+                        ? "bg-[#faf5ff] border-[#c084fc]"
                         : isTopVip
-                        ? "bg-amber-50/40 border-amber-300 hover:border-amber-400"
-                        : "bg-white border-gray-200 hover:border-[#a855f7]"
+                        ? "bg-amber-50/40 border-amber-300"
+                        : "bg-white border-gray-200"
                     }`}
                   >
                     {isPopular && (
