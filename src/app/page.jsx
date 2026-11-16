@@ -1608,128 +1608,161 @@ export default function HomePage() {
 
       {/* SECTION 3: ALL CONTESTANTS LUXURY GRID */}
       <section id="contestants" className="max-w-7xl mx-auto px-4 sm:px-6 py-10 w-full flex-1">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8 bg-white border border-[#9333ea]/25 p-5 rounded-3xl shadow-md">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#a855f7]/20 text-[#520d7a] text-xs font-extrabold">
-                <Leaf className="w-3.5 h-3.5 text-[#7e1db3]" />
-                <span>OFFICIAL FINALISTS • ຜູ້ເຂົ້າປະກວດທັງ 20 ໝາຍເລກ (HM 01 - HM 20)</span>
-              </span>
-              <span className="text-xs text-amber-600 font-bold">
-                • 1 Like = 1 ຄະແນນ • 1 Share = 1 ຄະແນນ • QR Vote ບໍ່ຈຳກັດຄັ້ງ
-              </span>
+        {/* LUXURY FILTER & CONTROLS HEADER */}
+        <div className="bg-white border border-[#9333ea]/20 rounded-3xl p-5 sm:p-7 shadow-[0_10px_35px_-5px_rgba(88,13,128,0.07)] mb-8 space-y-5">
+          {/* TOP ROW: Title & Costume Switcher */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 pb-5 border-b border-[#9333ea]/15">
+            <div>
+              <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-[#7e1db3]/15 to-amber-500/15 text-[#580d80] text-xs font-black border border-[#7e1db3]/25 shadow-sm">
+                  <Crown className="w-3.5 h-3.5 text-amber-500" />
+                  <span>OFFICIAL FINALISTS (HM 01 - HM 20)</span>
+                </span>
+                <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+                  <Sparkles className="w-3 h-3 text-amber-500" />
+                  <span>1 Like = 1 ຄະແນນ • 1 Share = 1 ຄະແນນ • QR Vote ບໍ່ຈຳກັດ</span>
+                </span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black text-[#240638] tracking-tight flex items-center gap-2">
+                <span>ຜູ້ເຂົ້າປະກວດ ນາງສາວເຜົ່າມົ້ງນະຄອນຫຼວງ 2027</span>
+                <span className="text-sm sm:text-base font-extrabold px-3 py-0.5 rounded-full bg-[#f3ebfa] text-[#7e1db3] border border-[#7e1db3]/20">
+                  {filteredContestants.length} ໝາຍເລກ
+                </span>
+              </h2>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-[#240638] mt-1">
-              ຜູ້ເຂົ້າປະກວດ ນາງສາວເຜົ່າມົ້ງນະຄອນຫຼວງວຽງຈັນ 2027 ({filteredContestants.length} ໝາຍເລກ)
-            </h2>
-          </div>
 
-          <div className="flex flex-col sm:flex-row flex-wrap gap-3">
-            {/* Costume Mode Switcher */}
-            <div className="inline-flex rounded-2xl bg-[#240638]/8 p-1.5 border border-[#9333ea]/30 shadow-inner">
+            {/* Luxury Costume Segmented Tabs */}
+            <div className="inline-flex p-1.5 rounded-2xl bg-[#f5edfc] border border-[#9333ea]/25 shadow-inner self-start lg:self-center">
               <button
                 type="button"
                 onClick={() => setCostumeMode("TRADITIONAL")}
-                className={`inline-flex items-center px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
                   costumeMode === "TRADITIONAL"
-                    ? "bg-gradient-to-r from-[#7e1db3] to-[#580d80] text-amber-300 shadow-lg border border-amber-400/40"
-                    : "text-[#520d7a] hover:bg-white/80"
+                    ? "bg-gradient-to-r from-[#4c0d75] to-[#7e1db3] text-amber-300 shadow-md border border-amber-400/40"
+                    : "text-[#580d80] hover:bg-white/80"
                 }`}
               >
+                <Sparkles className="w-3.5 h-3.5" />
                 <span>ຊຸດມົ້ງດັ້ງເດີມ (Royal Purple)</span>
-                <span className="ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-400/25 text-amber-200 border border-amber-300/30">
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-black transition-all ${
+                    costumeMode === "TRADITIONAL"
+                      ? "bg-amber-400 text-[#240638]"
+                      : "bg-[#7e1db3]/15 text-[#580d80]"
+                  }`}
+                >
                   20 ໝາຍເລກ
                 </span>
               </button>
+
               <button
                 type="button"
                 onClick={() => setCostumeMode("JEWELRY")}
-                className={`inline-flex items-center px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
                   costumeMode === "JEWELRY"
-                    ? "bg-gradient-to-r from-[#991b1b] to-[#7f1d1d] text-amber-300 shadow-lg border border-amber-400/40"
-                    : "text-[#520d7a] hover:bg-white/80"
+                    ? "bg-gradient-to-r from-[#854d0e] via-[#b45309] to-[#d97706] text-amber-50 shadow-md border border-amber-300/50"
+                    : "text-[#78350f] hover:bg-white/80"
                 }`}
               >
+                <Gem className="w-3.5 h-3.5" />
                 <span>ຊຸດປະດັບຄຳພູວົງ (Phouvong Gold)</span>
-                <span className="ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-400/25 text-amber-200 border border-amber-300/30">
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-black transition-all ${
+                    costumeMode === "JEWELRY"
+                      ? "bg-white text-[#854d0e] shadow-sm"
+                      : "bg-amber-200/80 text-[#854d0e]"
+                  }`}
+                >
                   15 ໝາຍເລກ
                 </span>
               </button>
             </div>
+          </div>
 
-            <div className="relative">
-              <Search className="w-4 h-4 text-[#9333ea] absolute left-3.5 top-1/2 -translate-y-1/2" />
+          {/* BOTTOM ROW: Search & Sorting Bar */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+            {/* Search Bar */}
+            <div className="relative flex-1 sm:max-w-md">
+              <Search className="w-4 h-4 text-[#7e1db3] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ຄົ້ນຫາໝາຍເລກ HM 01 - HM 20 ຫຼື ຊື່..."
-                className="w-full sm:w-56 pl-10 pr-4 py-2.5 rounded-xl bg-[#f9f5fd] border border-[#9333ea]/30 text-sm text-[#240638] placeholder:text-[#9333ea]/60 focus:outline-none focus:border-[#9333ea]"
+                placeholder="ຄົ້ນຫາໝາຍເລກ HM 01 - HM 20 ຫຼື ຊື່ຜູ້ເຂົ້າປະກວດ..."
+                className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-[#fbf8fd] border border-[#9333ea]/25 text-sm text-[#240638] placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#7e1db3] focus:ring-2 focus:ring-[#7e1db3]/20 transition"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-bold px-1"
+                >
+                  ✕
+                </button>
+              )}
             </div>
 
-            <div className="inline-flex rounded-xl bg-[#f3ebfa] p-1 border border-[#9333ea]/25">
-              <button
-                type="button"
-                onClick={() => setSortBy("VOTES")}
-                className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-extrabold transition cursor-pointer ${
-                  sortBy === "VOTES"
-                    ? "bg-[#7e1db3] text-white shadow"
-                    : "text-[#520d7a] hover:bg-white/60"
-                }`}
-              >
-                <span>ຄະແນນສູງສຸດ</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSortBy("CODE")}
-                className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-extrabold transition cursor-pointer ${
-                  sortBy === "CODE"
-                    ? "bg-[#7e1db3] text-white shadow"
-                    : "text-[#520d7a] hover:bg-white/60"
-                }`}
-              >
-                <span>ຕາມໝາຍເລກ</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSortBy("HEARTS")}
-                className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-extrabold transition cursor-pointer ${
-                  sortBy === "HEARTS"
-                    ? "bg-[#7e1db3] text-white shadow"
-                    : "text-[#520d7a] hover:bg-white/60"
-                }`}
-              >
-                <span>ຍອດຫົວໃຈ</span>
-              </button>
+            {/* Sort Pills */}
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <span className="text-xs font-bold text-[#644180] hidden md:inline">ຈັດລຽງ:</span>
+              <div className="inline-flex rounded-2xl bg-[#f5edfc] p-1 border border-[#9333ea]/20 shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => setSortBy("VOTES")}
+                  className={`inline-flex items-center gap-1 px-3.5 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer ${
+                    sortBy === "VOTES"
+                      ? "bg-[#7e1db3] text-white shadow-sm"
+                      : "text-[#580d80] hover:bg-white/60"
+                  }`}
+                >
+                  <Trophy className="w-3.5 h-3.5" />
+                  <span>ຄະແນນສູງສຸດ</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortBy("CODE")}
+                  className={`inline-flex items-center gap-1 px-3.5 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer ${
+                    sortBy === "CODE"
+                      ? "bg-[#7e1db3] text-white shadow-sm"
+                      : "text-[#580d80] hover:bg-white/60"
+                  }`}
+                >
+                  <Hash className="w-3.5 h-3.5" />
+                  <span>ຕາມໝາຍເລກ</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortBy("HEARTS")}
+                  className={`inline-flex items-center gap-1 px-3.5 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer ${
+                    sortBy === "HEARTS"
+                      ? "bg-[#7e1db3] text-white shadow-sm"
+                      : "text-[#580d80] hover:bg-white/60"
+                  }`}
+                >
+                  <Heart className="w-3.5 h-3.5 fill-current" />
+                  <span>ຍອດຫົວໃຈ</span>
+                </button>
+              </div>
             </div>
           </div>
+
+          {/* Sub-banner for Jewelry mode notice only */}
+          {costumeMode === "JEWELRY" && (
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-50 to-amber-500/10 border border-amber-300/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <span className="font-bold text-[#78350f] flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>ສະແດງຊຸດປະດັບຄຳ ຮ້ານຄຳພູວົງ (Phouvong Jewelry) 15 ໝາຍເລກ (HM 06 - HM 20) • ໝາຍເລກ HM 01 - HM 05 ກຳລັງລໍຖ້າຮູບຈາກກອງປະກວດ</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setCostumeMode("TRADITIONAL")}
+                className="shrink-0 px-3 py-1 rounded-xl bg-gradient-to-r from-[#4c0d75] to-[#7e1db3] hover:opacity-95 text-amber-300 font-black shadow-sm transition cursor-pointer"
+              >
+                ສະແດງຄົບ 20 ໝາຍເລກ (ຊຸດມົ້ງດັ້ງເດີມ)
+              </button>
+            </div>
+          )}
         </div>
-
-        {/* Costume Mode Info Banner */}
-        {costumeMode === "JEWELRY" ? (
-          <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-[#7f1d1d]/15 via-amber-500/10 to-[#7f1d1d]/15 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <span className="text-xs sm:text-sm font-bold text-[#7f1d1d]">
-              ສະແດງຊຸດປະດັບຄຳ ຮ້ານຄຳພູວົງ (Phouvong Jewelry) 15 ໝາຍເລກ (HM 06 - HM 20) • ໝາຍເລກ HM 01 - HM 05 ກຳລັງລໍຖ້າຮູບຈາກກອງປະກວດ
-            </span>
-            <button
-              type="button"
-              onClick={() => setCostumeMode("TRADITIONAL")}
-              className="shrink-0 px-3.5 py-1.5 rounded-xl bg-[#7e1db3] hover:bg-[#6b1699] text-amber-300 text-xs font-black shadow-sm transition cursor-pointer"
-            >
-              ສະແດງຄົບທັງ 20 ໝາຍເລກ (ຊຸດມົ້ງດັ້ງເດີມ)
-            </button>
-          </div>
-        ) : (
-          <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-[#580d80]/15 via-purple-500/10 to-[#580d80]/15 border border-[#9333ea]/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <span className="text-xs sm:text-sm font-bold text-[#520d7a]">
-              ສະແດງຊຸດມົ້ງດັ້ງເດີມ (Royal Purple & Gold) ຄົບທັງ 20 ໝາຍເລກ (HM 01 - HM 20) ຢ່າງເປັນທາງການ
-            </span>
-            <span className="shrink-0 px-3 py-1 rounded-full bg-[#7e1db3]/15 text-[#580d80] text-xs font-black border border-[#7e1db3]/25">
-              ຄົບ 20 ໝາຍເລກ
-            </span>
-          </div>
-        )}
 
         {loading ? (
           <div className="text-center py-20 text-[#6b1699] font-bold">
