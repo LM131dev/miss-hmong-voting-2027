@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
+import { OFFICIAL_CONTESTANTS, EIGHT_PACKAGES } from "../lib/constants";
 import {
   Crown,
   Sparkles,
@@ -429,9 +430,9 @@ export function hasJewelryPhoto(c) {
 }
 
 export default function HomePage() {
-  const [contestants, setContestants] = useState([]);
+  const [contestants, setContestants] = useState(OFFICIAL_CONTESTANTS);
   const [pastQueens, setPastQueens] = useState([]);
-  const [packages, setPackages] = useState([]);
+  const [packages, setPackages] = useState(EIGHT_PACKAGES);
   const [transactions, setTransactions] = useState([]);
   const [settings, setSettings] = useState({});
   const [totalVotes, setTotalVotes] = useState(0);
@@ -562,11 +563,17 @@ export default function HomePage() {
   const fetchState = async () => {
     try {
       const res = await fetch("/api/state", { cache: "no-store" });
+      if (!res.ok) return;
       const data = await res.json();
-      if (data.contestants) {
+      if (Array.isArray(data.contestants) && data.contestants.length > 0) {
         setContestants(data.contestants);
-        setPackages(data.packages || []);
+      }
+      if (Array.isArray(data.packages) && data.packages.length > 0) {
+        setPackages(data.packages);
+      }
+      if (data.transactions) {
         setTransactions(data.transactions || []);
+      }
         setSettings(data.settings || {});
         setTotalVotes(data.stats?.total_votes || 0);
         if (data.packages?.length > 0 && !selectedPkg) {
@@ -604,7 +611,6 @@ export default function HomePage() {
         if (data.sponsors && data.sponsors.length > 0) {
           setSponsorsRaw(data.sponsors);
         }
-      }
     } catch (err) {
       console.error("Failed to load voting state:", err);
     } finally {

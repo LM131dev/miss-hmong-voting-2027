@@ -3,7 +3,13 @@ import path from "node:path";
 import fs from "node:fs";
 
 function getDbPath() {
-  if (process.env.VERCEL) {
+  const isServerless = Boolean(
+    process.env.NETLIFY ||
+    process.env.VERCEL ||
+    process.env.AWS_LAMBDA_FUNCTION_NAME ||
+    process.env.LAMBDA_TASK_ROOT
+  );
+  if (isServerless) {
     const tmpPath = path.join("/tmp", "miss-hmong.sqlite");
     const localSeed = path.join(process.cwd(), "miss-hmong.sqlite");
     if (!fs.existsSync(tmpPath) && fs.existsSync(localSeed)) {
@@ -13,7 +19,7 @@ function getDbPath() {
         console.warn("Could not copy seed DB to /tmp:", err);
       }
     }
-    return fs.existsSync(tmpPath) ? tmpPath : path.join(process.cwd(), "miss-hmong.sqlite");
+    return fs.existsSync(tmpPath) ? tmpPath : ":memory:";
   }
   return path.join(process.cwd(), "miss-hmong.sqlite");
 }
@@ -25,16 +31,21 @@ export function getDb() {
     try {
       const dbPath = getDbPath();
       dbInstance = new DatabaseSync(dbPath);
+      initSchema(dbInstance);
     } catch (err) {
       console.warn("Falling back to in-memory SQLite:", err);
-      dbInstance = new DatabaseSync(":memory:");
+      try {
+        dbInstance = new DatabaseSync(":memory:");
+        initSchema(dbInstance);
+      } catch (memErr) {
+        console.error("Critical: Failed to initialize in-memory SQLite:", memErr);
+      }
     }
   }
-  initSchema(dbInstance);
   return dbInstance;
 }
 
-const EIGHT_PACKAGES = [
+export const EIGHT_PACKAGES = [
   { name: "Single Vote (1 Vote)", points: 1, price_lak: 10000, badge: "ເລີ່ມຕົ້ນ" },
   { name: "Popular Pack (5 Votes)", points: 5, price_lak: 40000, badge: "ປະຢັດ 20%" },
   { name: "Mega Pack (20 Votes)", points: 20, price_lak: 150000, badge: "ຂາຍດີສຸດ" },
@@ -45,7 +56,7 @@ const EIGHT_PACKAGES = [
   { name: "Royal Grand Sponsor (2,500 Votes)", points: 2500, price_lak: 10000000, badge: "Royal VIP" },
 ];
 
-const OFFICIAL_CONTESTANTS = [
+export const OFFICIAL_CONTESTANTS = [
   {
     code: "HM 01",
     name: "ນາງ ປ່າຍົງ ວື່",
