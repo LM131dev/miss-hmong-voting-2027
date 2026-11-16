@@ -1,22 +1,14 @@
 import "./globals.css";
-import { Noto_Serif_Lao } from "next/font/google";
-
-const notoSerifLao = Noto_Serif_Lao({
-  subsets: ["lao", "latin"],
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
-  variable: "--font-noto-serif-lao",
-  display: "swap",
-});
 
 export const metadata = {
-  title: "ສວນບັນດາເຜົ່າ • Lao Ethnic Garden | ກອງປະກວດ ນາງສາວເຜົ່າມົ້ງນະຄອນຫຼວງ 2026",
+  title: "ກອງປະກວດ ນາງສາວເຜົ່າມົ້ງນະຄອນຫຼວງວຽງຈັນ 2027 | Miss Hmong Vientiane 2027",
   description:
-    "ຮ່ວມໂຫວດສົ່ງແຮງໃຈເຊຍສາວງາມ ກອງປະກວດ ນາງສາວເຜົ່າມົ້ງນະຄອນຫຼວງ ພາຍໃຕ້ໂຄງການ ສວນບັນດາເຜົ່າ (Lao Ethnic Garden)",
+    "ຮ່ວມໂຫວດສົ່ງແຮງໃຈເຊຍສາວງາມ ກອງປະກວດ ນາງສາວເຜົ່າມົ້ງນະຄອນຫຼວງ ພາຍໃຕ້ໂຄງການ ສວນບັນດາເຜົ່າ (Lao Ethnic Garden) ແລະ ຮ້ານຄຳພູວົງ",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="lo" className={notoSerifLao.variable}>
+    <html lang="lo">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
@@ -29,9 +21,7 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body
-        className={`${notoSerifLao.className} min-h-screen bg-[#f3f8ed] text-[#16300e] antialiased selection:bg-[#8cc63f] selection:text-white`}
-      >
+      <body className="min-h-screen bg-[#f8f4fc] text-[#240638] antialiased">
         {children}
       </body>
     </html>

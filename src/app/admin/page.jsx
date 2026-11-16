@@ -34,11 +34,31 @@ import {
   Menu,
   ChevronRight,
   ChevronDown,
+  LogOut,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  User,
+  KeyRound,
 } from "lucide-react";
 
 export default function AdminDashboardPage() {
-  const [isUnlocked, setIsUnlocked] = useState(true);
-  const [pinInput, setPinInput] = useState("admin123");
+  // Authentication states
+  const [authChecking, setAuthChecking] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [adminUser, setAdminUser] = useState(null);
+  const [loginUser, setLoginUser] = useState("admin");
+  const [loginPass, setLoginPass] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Change password states
+  const [currPass, setCurrPass] = useState("");
+  const [newPass, setNewPass] = useState("");
+  const [confirmPass, setConfirmPass] = useState("");
+  const [changingPass, setChangingPass] = useState(false);
+  const [passNotice, setPassNotice] = useState("");
 
   // Mobile sidebar drawer state
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -88,6 +108,102 @@ export default function AdminDashboardPage() {
     setTimeout(() => setToast(null), 3500);
   };
 
+  const checkAuth = async () => {
+    try {
+      const res = await fetch("/api/admin");
+      const data = await res.json();
+      if (res.ok && data.authenticated) {
+        setIsAuthenticated(true);
+        setAdminUser(data.user);
+        loadData();
+      } else {
+        setIsAuthenticated(false);
+      }
+    } catch {
+      setIsAuthenticated(false);
+    } finally {
+      setAuthChecking(false);
+    }
+  };
+
+  const handleLogin = async (e) => {
+    if (e) e.preventDefault();
+    if (!loginUser.trim() || !loginPass) {
+      setLoginError("ກະລຸນາປ້ອນຊື່ຜູ້ໃຊ້ ແລະ ລະຫັດຜ່ານ");
+      return;
+    }
+    setLoginLoading(true);
+    setLoginError("");
+    try {
+      const res = await fetch("/api/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "LOGIN",
+          payload: { username: loginUser, password: loginPass },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setLoginError(data.error || "ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ");
+        return;
+      }
+      setIsAuthenticated(true);
+      setAdminUser(data.user);
+      setLoginPass("");
+      loadData();
+    } catch (err) {
+      setLoginError("ບໍ່ສາມາດເຊື່ອມຕໍ່ Server ໄດ້: " + err.message);
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (!confirm("ທ່ານຕ້ອງການອອກຈາກລະບົບແທ້ບໍ່?")) return;
+    try {
+      await fetch("/api/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "LOGOUT" }),
+      });
+    } catch (e) {
+      console.error(e);
+    }
+    setIsAuthenticated(false);
+    setAdminUser(null);
+  };
+
+  const handleChangePassword = async (e) => {
+    if (e) e.preventDefault();
+    if (!currPass || !newPass) {
+      alert("ກະລຸນາປ້ອນລະຫັດຜ່ານປັດຈຸບັນ ແລະ ລະຫັດຜ່ານໃໝ່");
+      return;
+    }
+    if (newPass.length < 6) {
+      alert("ລະຫັດຜ່ານໃໝ່ຕ້ອງມີຢ່າງໜ້ອຍ 6 ຕົວອັກສອນ");
+      return;
+    }
+    if (newPass !== confirmPass) {
+      alert("ລະຫັດຜ່ານໃໝ່ ແລະ ຢືນຢັນລະຫັດຜ່ານບໍ່ກົງກັນ");
+      return;
+    }
+    setChangingPass(true);
+    setPassNotice("");
+    const ok = await callAdminApi("CHANGE_PASSWORD", {
+      currentPassword: currPass,
+      newPassword: newPass,
+    });
+    setChangingPass(false);
+    if (ok) {
+      setCurrPass("");
+      setNewPass("");
+      setConfirmPass("");
+      setPassNotice("ປ່ຽນລະຫັດຜ່ານໃໝ່ສຳເລັດຮຽບຮ້ອຍແລ້ວ!");
+      setTimeout(() => setPassNotice(""), 4000);
+    }
+  };
+
   const loadData = async () => {
     setLoading(true);
     try {
@@ -111,7 +227,7 @@ export default function AdminDashboardPage() {
   };
 
   useEffect(() => {
-    loadData();
+    checkAuth();
   }, []);
 
   const callAdminApi = async (action, payload) => {
@@ -122,6 +238,11 @@ export default function AdminDashboardPage() {
         body: JSON.stringify({ action, payload }),
       });
       const data = await res.json();
+      if (res.status === 401) {
+        setIsAuthenticated(false);
+        setLoginError("Session ໝົດອາຍຸ ຫຼື ບໍ່ມີສິດເຂົ້າເຖິງ ກະລຸນາເຂົ້າສູ່ລະບົບໃໝ່");
+        return false;
+      }
       if (!res.ok) {
         alert(data.error || "ເກີດຂໍ້ຜິດພາດ");
         return false;
@@ -135,40 +256,146 @@ export default function AdminDashboardPage() {
     }
   };
 
-  if (!isUnlocked) {
+  // 1. Initial Authentication Loading State
+  if (authChecking) {
     return (
-      <div className="min-h-screen logo-exact-bg flex items-center justify-center p-4">
-        <div className="bg-white rounded-[32px] max-w-sm w-full p-6 space-y-4 text-center shadow-2xl">
-          <div className="w-full h-16 rounded-2xl overflow-hidden mx-auto border border-amber-400/40 bg-[#240638] p-1.5 shadow">
+      <div className="min-h-screen bg-[#0d0614] flex flex-col items-center justify-center p-4">
+        <div className="w-16 h-16 rounded-full border-4 border-amber-400 border-t-transparent animate-spin mb-4"></div>
+        <p className="text-amber-300 font-bold text-sm tracking-wide">
+          ກຳລັງກວດສອບສິດການເຂົ້າເຖິງລະບົບ...
+        </p>
+      </div>
+    );
+  }
+
+  // 2. High-Security Admin Login Screen
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#120824] via-[#1c0a33] to-[#0d0417] flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Ambient background glow */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/15 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div className="w-full max-w-md bg-white/95 backdrop-blur-xl rounded-[32px] p-7 sm:p-9 border border-amber-400/40 shadow-[0_25px_60px_-15px_rgba(88,13,128,0.4)] relative z-10 space-y-6">
+          {/* Header Logos */}
+          <div className="w-full h-16 rounded-2xl overflow-hidden mx-auto border border-amber-400/50 bg-[#240638] p-1.5 shadow-md">
             <img
               src="/official_pageant_logos.jpg"
-              alt="3 ໂລໂກ້ຫຼັກຂອງກອງປະກວດ: ຮ້ານຄຳພູວົງ • MHVT 2027 • ສວນບັນດາເຜົ່າ"
+              alt="Official Pageant Logos"
               className="w-full h-full object-contain"
             />
           </div>
-          <h1 className="text-lg font-black text-[#240638]">
-            ເຂົ້າສູ່ລະບົບຫຼັງບ້ານ • MHVT 2027
-          </h1>
-          <p className="text-xs text-[#644180]">
-            ລະຫັດທົດສອບສຳລັບແອັດມິນແມ່ນ:{" "}
-            <code className="text-[#520d7a] font-black">admin123</code>
-          </p>
-          <input
-            type="password"
-            value={pinInput}
-            onChange={(e) => setPinInput(e.target.value)}
-            placeholder="ປ້ອນລະຫັດຜ່ານ..."
-            className="w-full px-4 py-2.5 rounded-xl bg-[#f8f4fc] border border-[#9333ea]/30 text-sm text-center text-[#240638]"
-          />
-          <button
-            onClick={() => {
-              if (pinInput === "admin123") setIsUnlocked(true);
-              else alert("ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ (ໃຊ້: admin123)");
-            }}
-            className="w-full py-3 rounded-xl font-black text-sm btn-garden-vote cursor-pointer"
-          >
-            ເຂົ້າສູ່ລະບົບຈັດການ
-          </button>
+
+          <div className="text-center space-y-1">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-100 text-[#580d80] text-xs font-black border border-purple-200 shadow-sm">
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+              <span>ລະບົບຮັກສາຄວາມປອດໄພຂັ້ນສູງ</span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-black text-[#240638] tracking-tight pt-2">
+              ເຂົ້າສູ່ລະບົບຫຼັງບ້ານ (Admin Login)
+            </h1>
+            <p className="text-xs text-[#644180] font-medium">
+              Miss Hmong Vientiane 2027 • ລະບົບຈັດການຄະແນນ & ໃບບິນ
+            </p>
+          </div>
+
+          {/* Error Notice */}
+          {loginError && (
+            <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2.5 animate-shake">
+              <XCircle className="w-4 h-4 shrink-0 text-rose-600" />
+              <span>{loginError}</span>
+            </div>
+          )}
+
+          {/* Login Form */}
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-[#240638] mb-1.5">
+                ຊື່ຜູ້ໃຊ້ (Username):
+              </label>
+              <div className="relative">
+                <User className="w-4 h-4 text-[#7e1db3] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={loginUser}
+                  onChange={(e) => setLoginUser(e.target.value)}
+                  placeholder="admin"
+                  required
+                  autoFocus
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#f8f4fc] border border-[#9333ea]/25 text-sm text-[#240638] font-medium focus:outline-none focus:bg-white focus:border-[#7e1db3] focus:ring-2 focus:ring-[#7e1db3]/20 transition"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-[#240638] mb-1.5">
+                ລະຫັດຜ່ານ (Password):
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-[#7e1db3] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={loginPass}
+                  onChange={(e) => setLoginPass(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[#f8f4fc] border border-[#9333ea]/25 text-sm text-[#240638] font-medium focus:outline-none focus:bg-white focus:border-[#7e1db3] focus:ring-2 focus:ring-[#7e1db3]/20 transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#520d7a] transition cursor-pointer"
+                  title={showPassword ? "ເຊື່ອງລະຫັດຜ່ານ" : "ເບິ່ງລະຫັດຜ່ານ"}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loginLoading}
+              className="w-full py-3 rounded-xl font-black text-sm btn-garden-vote cursor-pointer shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+            >
+              {loginLoading ? (
+                <>
+                  <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
+                  <span>ກຳລັງເຂົ້າສູ່ລະບົບ...</span>
+                </>
+              ) : (
+                <>
+                  <KeyRound className="w-4 h-4" />
+                  <span>ເຂົ້າສູ່ລະບົບຈັດການ</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Credentials Info Box */}
+          <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-[11px] text-[#78350f] space-y-1">
+            <div className="font-black flex items-center gap-1.5 text-amber-800">
+              <Crown className="w-3.5 h-3.5 text-amber-600" />
+              <span>ລະຫັດຜ່ານເລີ່ມຕົ້ນຂອງລະບົບ (Default):</span>
+            </div>
+            <div>
+              ຊື່ຜູ້ໃຊ້: <code className="bg-amber-100/80 px-1.5 py-0.5 rounded font-mono font-bold">admin</code>
+              {" • "}
+              ລະຫັດຜ່ານ: <code className="bg-amber-100/80 px-1.5 py-0.5 rounded font-mono font-bold">mhvt2027</code>
+            </div>
+            <p className="text-[10px] text-zinc-500 pt-0.5">
+              (ທ່ານສາມາດປ່ຽນລະຫັດຜ່ານໃໝ່ໄດ້ຕະຫຼອດເວລາຢູ່ແທັບ "10. ຕັ້ງຄ່າລະບົບ" ຫຼັງຈາກເຂົ້າສູ່ລະບົບແລ້ວ)
+            </p>
+          </div>
+
+          <div className="text-center pt-1">
+            <Link
+              href="/"
+              className="text-xs font-bold text-[#644180] hover:text-[#240638] inline-flex items-center gap-1 transition"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>ກັບຄືນໜ້າເວັບໄຊຫຼັກ</span>
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -405,11 +632,11 @@ export default function AdminDashboardPage() {
 
           <div className="grid grid-cols-2 gap-2 pt-1">
             <button
-              onClick={() => setIsUnlocked(false)}
-              className="py-2 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer"
+              onClick={handleLogout}
+              className="py-2 px-3 rounded-xl bg-rose-600/30 hover:bg-rose-600/50 text-rose-200 border border-rose-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer"
             >
-              <Lock className="w-3.5 h-3.5 text-amber-300" />
-              <span>ລັອກໜ້າ</span>
+              <LogOut className="w-3.5 h-3.5 text-rose-300" />
+              <span>ອອກຈາກລະບົບ</span>
             </button>
             <Link
               href="/"
@@ -459,6 +686,13 @@ export default function AdminDashboardPage() {
             </div>
 
             <div className="flex items-center gap-2.5">
+              {/* Admin User Badge */}
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#f6effc] border border-[#9333ea]/20 text-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="text-[#580d80] font-bold">Admin:</span>
+                <span className="text-[#240638] font-black">{adminUser?.username || "admin"}</span>
+              </div>
+
               <button
                 onClick={loadData}
                 className="px-3 py-2 rounded-xl bg-[#f6effc] hover:bg-[#f0e3f8] text-[#520d7a] border border-[#9333ea]/20 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm"
@@ -467,14 +701,24 @@ export default function AdminDashboardPage() {
                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
                 <span className="hidden sm:inline">ໂຫຼດຂໍ້ມູນ</span>
               </button>
+
               <Link
                 href="/"
                 target="_blank"
                 className="px-3.5 py-2 rounded-xl logo-exact-bg text-white font-black text-xs flex items-center gap-1.5 shadow hover:opacity-95"
               >
-                <span>ເບິ່ງໜ້າເວັບຈິງ</span>
+                <span>ເບິ່ງໜ້າເວັບ</span>
                 <ExternalLink className="w-3.5 h-3.5 text-amber-300" />
               </Link>
+
+              <button
+                onClick={handleLogout}
+                className="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm transition"
+                title="ອອກຈາກລະບົບ"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">ອອກຈາກລະບົບ</span>
+              </button>
             </div>
           </div>
         </header>
@@ -1796,6 +2040,88 @@ export default function AdminDashboardPage() {
                     <Save className="w-4 h-4" />
                     <span>ບັນທຶກການຕັ້ງຄ່າທົ່ວໄປ</span>
                   </button>
+                </div>
+
+                {/* Dedicated Security & Password Management Card */}
+                <div className="md:col-span-2 rounded-3xl bg-white border border-[#9333ea]/25 p-6 shadow-sm space-y-4">
+                  <div className="flex items-center gap-2.5 pb-3 border-b border-[#9333ea]/15">
+                    <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-600">
+                      <KeyRound className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-base text-[#240638]">
+                        ຄວາມປອດໄພ & ປ່ຽນລະຫັດຜ່ານແອັດມິນ (Admin Security & Password)
+                      </h3>
+                      <p className="text-xs text-[#644180]">
+                        ລະຫັດຜ່ານຈະຖືກເຂົ້າລະຫັດ Scrypt ພ້ອມ Salt ຢ່າງປອດໄພໃນຖານຂໍ້ມູນ SQLite
+                      </p>
+                    </div>
+                  </div>
+
+                  {passNotice && (
+                    <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>{passNotice}</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleChangePassword} className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                    <div>
+                      <label className="block text-xs font-bold text-[#240638] mb-1.5">
+                        ລະຫັດຜ່ານປັດຈຸບັນ (Current Password):
+                      </label>
+                      <input
+                        type="password"
+                        value={currPass}
+                        onChange={(e) => setCurrPass(e.target.value)}
+                        placeholder="ປ້ອນລະຫັດຜ່ານເດີມ..."
+                        required
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#f8f4fc] border border-[#9333ea]/30 text-xs text-[#240638] focus:outline-none focus:bg-white focus:border-[#7e1db3]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-[#240638] mb-1.5">
+                        ລະຫັດຜ່ານໃໝ່ (New Password):
+                      </label>
+                      <input
+                        type="password"
+                        value={newPass}
+                        onChange={(e) => setNewPass(e.target.value)}
+                        placeholder="ຢ່າງໜ້ອຍ 6 ຕົວອັກສອນ..."
+                        required
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#f8f4fc] border border-[#9333ea]/30 text-xs text-[#240638] focus:outline-none focus:bg-white focus:border-[#7e1db3]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-[#240638] mb-1.5">
+                        ຢືນຢັນລະຫັດຜ່ານໃໝ່ (Confirm New):
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="password"
+                          value={confirmPass}
+                          onChange={(e) => setConfirmPass(e.target.value)}
+                          placeholder="ປ້ອນລະຫັດໃໝ່ອີກຄັ້ງ..."
+                          required
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-[#f8f4fc] border border-[#9333ea]/30 text-xs text-[#240638] focus:outline-none focus:bg-white focus:border-[#7e1db3]"
+                        />
+                        <button
+                          type="submit"
+                          disabled={changingPass}
+                          className="px-4 py-2.5 rounded-xl font-black text-xs btn-garden-vote flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 shadow-md"
+                        >
+                          {changingPass ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Save className="w-3.5 h-3.5" />
+                          )}
+                          <span>ບັນທຶກລະຫັດໃໝ່</span>
+                        </button>
+                      </div>
+                    </div>
+                  </form>
                 </div>
               </div>
             </div>

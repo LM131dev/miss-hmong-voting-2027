@@ -1,13 +1,101 @@
 import { NextResponse } from "next/server";
 import { getDb } from "../../../lib/db";
+import {
+  verifyAdminRequest,
+  getAdminCredentials,
+  verifyPassword,
+  updateAdminPassword,
+  createSessionToken,
+} from "../../../lib/auth";
 
 export const dynamic = "force-dynamic";
+
+export async function GET(req) {
+  const auth = verifyAdminRequest(req);
+  if (!auth.valid) {
+    return NextResponse.json({ authenticated: false }, { status: 401 });
+  }
+  return NextResponse.json({
+    authenticated: true,
+    user: { username: auth.user.username, role: auth.user.role },
+  });
+}
 
 export async function POST(req) {
   try {
     const body = await req.json();
     const { action } = body;
     const payload = body.payload || body.data || body;
+
+    // 1. PUBLIC AUTH ACTION: LOGIN
+    if (action === "LOGIN") {
+      const username = String(payload.username || "").trim();
+      const password = String(payload.password || "");
+
+      if (!username || !password) {
+        return NextResponse.json(
+          { error: "ກະລຸນາປ້ອນຊື່ຜູ້ໃຊ້ ແລະ ລະຫັດຜ່ານໃຫ້ຄົບຖ້ວນ" },
+          { status: 400 }
+        );
+      }
+
+      const creds = getAdminCredentials();
+      const userMatches = username.toLowerCase() === creds.username.toLowerCase();
+      const passMatches = verifyPassword(password, creds.hash, creds.salt);
+
+      if (!userMatches || !passMatches) {
+        return NextResponse.json(
+          { error: "ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ! ກະລຸນາກວດສອບຄືນ" },
+          { status: 401 }
+        );
+      }
+
+      const token = createSessionToken(creds.username);
+      const res = NextResponse.json({
+        success: true,
+        message: "ເຂົ້າສູ່ລະບົບສຳເລັດແລ້ວ!",
+        user: { username: creds.username },
+        token,
+      });
+
+      res.cookies.set("admin_token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 7 * 24 * 60 * 60,
+      });
+
+      return res;
+    }
+
+    // 2. PUBLIC AUTH ACTION: LOGOUT
+    if (action === "LOGOUT") {
+      const res = NextResponse.json({
+        success: true,
+        message: "ອອກຈາກລະບົບຮຽບຮ້ອຍແລ້ວ!",
+      });
+
+      res.cookies.set("admin_token", "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 0,
+      });
+
+      return res;
+    }
+
+    // 3. Strict Server-Side Authentication Guard for ALL protected actions
+    const auth = verifyAdminRequest(req);
+    if (!auth.valid) {
+      return NextResponse.json(
+        { error: "Unauthorized: ບໍ່ມີສິດເຂົ້າເຖິງ ກະລຸນາເຂົ້າສູ່ລະບົບກ່ອນ" },
+        { status: 401 }
+      );
+    }
+
     const db = getDb();
 
     if (action === "APPROVE_TX") {
@@ -458,6 +546,29 @@ export async function POST(req) {
       const spId = Number(payload.id);
       db.prepare("DELETE FROM sponsors WHERE id = ?").run(spId);
       return NextResponse.json({ success: true, message: "ລຶບຜູ້ສະໜັບສະໜູນແລ້ວ" });
+    }
+
+    if (action === "CHANGE_PASSWORD") {
+      const { currentPassword, newPassword, newUsername } = payload;
+      const creds = getAdminCredentials();
+      const passMatches = verifyPassword(String(currentPassword || ""), creds.hash, creds.salt);
+      if (!passMatches) {
+        return NextResponse.json(
+          { error: "ລະຫັດຜ່ານປັດຈຸບັນບໍ່ຖືກຕ້ອງ! ກະລຸນາກວດສອບຄືນ" },
+          { status: 400 }
+        );
+      }
+      if (!newPassword || String(newPassword).length < 6) {
+        return NextResponse.json(
+          { error: "ລະຫັດຜ່ານໃໝ່ຕ້ອງມີຢ່າງໜ້ອຍ 6 ຕົວອັກສອນ" },
+          { status: 400 }
+        );
+      }
+      updateAdminPassword(String(newPassword), newUsername || creds.username);
+      return NextResponse.json({
+        success: true,
+        message: "ປ່ຽນລະຫັດຜ່ານແອັດມິນສຳເລັດຮຽບຮ້ອຍແລ້ວ!",
+      });
     }
 
     if (action === "UPDATE_SETTINGS") {
