@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  serverExternalPackages: ["node:sqlite"],
   images: {
     unoptimized: true,
   },
@@ -8,12 +9,6 @@ const nextConfig = {
   },
   eslint: {
     ignoreDuringBuilds: true,
-  },
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      config.externals.push("node:sqlite");
-    }
-    return config;
   },
 };
 
