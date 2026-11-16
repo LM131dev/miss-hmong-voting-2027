@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-noto-serif-lao), "Noto Serif Lao", serif;
+  --font-serif: var(--font-noto-serif-lao), "Noto Serif Lao", serif;
+  --font-mono: var(--font-noto-serif-lao), "Noto Serif Lao", serif;
+}
+
+@layer base {
+  :root {
+    --royal-magenta: #a855f7;
+    --royal-purple: #6b1699;
+    --royal-plum: #470a68;
+    --royal-deep: #240638;
+    --royal-gold: #f59e0b;
+  }
+
+  html,
+  body,
+  button,
+  input,
+  select,
+  textarea {
+    font-family: var(--font-noto-serif-lao), "Noto Serif Lao", serif !important;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #f8f4fc;
+    color: #240638;
+    overflow-x: hidden;
+  }
+}
+
+/* ພື້ນຫຼັງໂທນສີມ້ວງ-ຄຳ ລາຊະວົງ ຕາມຮູບຜູ້ເຂົ້າປະກວດ HM 01 (Royal Purple & Gold Gradient) */
+.logo-exact-bg {
+  background:
+    radial-gradient(circle at 18% 20%, rgba(192, 132, 252, 0.42) 0%, transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(245, 158, 11, 0.22) 0%, transparent 50%),
+    linear-gradient(135deg, #7e1db3 0%, #520d7a 48%, #2e0547 100%);
+}
+
+/* ພື້ນຫຼັງສີມ້ວງເຂັ້ມຫລູຫລາສຳລັບແຖບເທິງ ແລະ Podium (Deep Royal Plum Velvet) */
+.garden-luxury-dark {
+  background:
+    radial-gradient(circle at 22% 0%, rgba(168, 85, 247, 0.35) 0%, transparent 52%),
+    radial-gradient(circle at 80% 100%, rgba(245, 158, 11, 0.18) 0%, transparent 48%),
+    linear-gradient(135deg, #3b0859 0%, #240438 55%, #160224 100%);
+}
+
+/* ປຸ່ມໂຫວດໂທນສີມ້ວງລາຊະວົງ (Vibrant Royal Purple CTA) */
+.btn-garden-vote {
+  background: linear-gradient(135deg, #9333ea 0%, #6b1699 55%, #470a68 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 25px -5px rgba(107, 22, 153, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-garden-vote:hover {
+  background: linear-gradient(135deg, #a855f7 0%, #7e1db3 55%, #580d80 100%);
+  box-shadow: 0 14px 30px -5px rgba(126, 29, 179, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+/* ປຸ່ມໂຫວດສີຄຳມົງກຸດ (Royal Gold CTA) */
+.btn-gold-vote {
+  background: linear-gradient(135deg, #fde047 0%, #f59e0b 55%, #d97706 100%);
+  color: #240638;
+  box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-gold-vote:hover {
+  background: linear-gradient(135deg, #fef08a 0%, #fbbf24 55%, #f59e0b 100%);
+  box-shadow: 0 14px 32px -5px rgba(245, 158, 11, 0.65);
+  transform: translateY(-2px);
+}
+
+/* ບັດແກ້ວສີຂາວຂອບມ້ວງ-ຄຳຫລູຫລາ (Luxury Royal Card) */
+.garden-card {
+  background: #ffffff;
+  border: 1px solid rgba(126, 29, 179, 0.16);
+  box-shadow: 0 14px 38px -10px rgba(46, 5, 71, 0.1);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.garden-card:hover {
+  border-color: rgba(168, 85, 247, 0.6);
+  box-shadow: 0 24px 48px -12px rgba(71, 10, 104, 0.22);
+  transform: translateY(-6px);
+}
+
+/* Hide scrollbar for carousel sliders */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
