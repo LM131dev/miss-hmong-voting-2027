@@ -509,6 +509,35 @@ export default function HomePage() {
       setCanScrollNewsRight(scrollLeft < scrollWidth - clientWidth - 15);
     }
   };
+
+  const [isNewsHovered, setIsNewsHovered] = useState(false);
+  const [isAutoPlayNews, setIsAutoPlayNews] = useState(true);
+
+  // Auto-play news slider every 3.8 seconds
+  useEffect(() => {
+    if (!isAutoPlayNews || isNewsHovered || selectedNewsDetail) return;
+
+    const interval = setInterval(() => {
+      if (newsSliderRef.current) {
+        const container = newsSliderRef.current;
+        const cardWidth =
+          container.offsetWidth > 1024
+            ? container.offsetWidth / 3
+            : container.offsetWidth > 640
+            ? container.offsetWidth / 2
+            : container.offsetWidth * 0.85;
+
+        // If reached or near the end, loop smoothly back to beginning
+        if (container.scrollLeft >= container.scrollWidth - container.clientWidth - 25) {
+          container.scrollTo({ left: 0, behavior: "smooth" });
+        } else {
+          container.scrollBy({ left: cardWidth, behavior: "smooth" });
+        }
+      }
+    }, 3800);
+
+    return () => clearInterval(interval);
+  }, [isAutoPlayNews, isNewsHovered, selectedNewsDetail, filteredNewsList]);
   const [sponsorsRaw, setSponsorsRaw] = useState([]);
   const [bookingTicket, setBookingTicket] = useState(null);
   const [ticketBuyerName, setTicketBuyerName] = useState("");
@@ -2122,9 +2151,21 @@ export default function HomePage() {
 
             {/* Carousel Navigation Buttons & Counter */}
             <div className="flex items-center gap-2.5 self-end sm:self-auto">
-              <span className="text-xs text-[#644180] font-bold hidden sm:inline">
-                ເລື່ອນຊ້າຍ-ຂວາ ({filteredNewsList.length} ຂ່າວ)
-              </span>
+              {/* Auto-Slide Toggle Button */}
+              <button
+                type="button"
+                onClick={() => setIsAutoPlayNews(!isAutoPlayNews)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer border ${
+                  isAutoPlayNews
+                    ? "bg-amber-400/20 text-amber-800 border-amber-400/50 shadow-sm"
+                    : "bg-gray-100 hover:bg-gray-200 text-gray-500 border-gray-200"
+                }`}
+                title={isAutoPlayNews ? "ກົດເພື່ອຢຸດສະໄລ້" : "ກົດເພື່ອເປີດສະໄລ້ອັດຕະໂນມັດ"}
+              >
+                <span className={`w-2 h-2 rounded-full ${isAutoPlayNews ? "bg-emerald-500 animate-pulse" : "bg-gray-400"}`} />
+                <span>{isAutoPlayNews ? "ສະໄລ້ອັດຕະໂນມັດ" : "ຢຸດສະໄລ້"}</span>
+              </button>
+
               <div className="flex items-center gap-1.5 bg-white p-1 rounded-2xl border border-[#9333ea]/20 shadow-sm">
                 <button
                   type="button"
@@ -2187,6 +2228,10 @@ export default function HomePage() {
             <div
               ref={newsSliderRef}
               onScroll={handleNewsScroll}
+              onMouseEnter={() => setIsNewsHovered(true)}
+              onMouseLeave={() => setIsNewsHovered(false)}
+              onTouchStart={() => setIsNewsHovered(true)}
+              onTouchEnd={() => setIsNewsHovered(false)}
               className="flex gap-5 sm:gap-6 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory scroll-smooth no-scrollbar"
               style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
