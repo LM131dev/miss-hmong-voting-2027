@@ -291,7 +291,7 @@ export default function AdminDashboardPage() {
               <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
               <span>ລະບົບຮັກສາຄວາມປອດໄພຂັ້ນສູງ</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-[#240638] tracking-tight pt-2">
+            <h1 className="text-xl sm:text-2xl font-black text-[#240638] tracking-normal pt-2">
               ເຂົ້າສູ່ລະບົບຫຼັງບ້ານ (Admin Login)
             </h1>
             <p className="text-xs text-[#644180] font-medium">

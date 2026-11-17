@@ -936,7 +936,7 @@ export default function HomePage() {
             </div>
             <div className="hidden sm:block lg:hidden 2xl:block whitespace-nowrap">
               <div className="flex items-center gap-1.5">
-                <span className="font-black text-sm text-[#240638] tracking-tight">
+                <span className="font-black text-sm text-[#240638] tracking-normal">
                   ນາງສາວເຜົ່າມົ້ງນະຄອນຫຼວງ 2027
                 </span>
                 <span
@@ -1046,7 +1046,7 @@ export default function HomePage() {
 
               {/* Clean Main Title (No Messy Underlines Cutting Vowels) */}
               <div className="space-y-3">
-                <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-snug">
+                <h1 className="text-3xl sm:text-5xl font-black tracking-normal text-white leading-snug">
                   ກອງປະກວດ{" "}
                   <span className="text-amber-300">
                     ນາງສາວເຜົ່າມົ້ງນະຄອນຫຼວງວຽງຈັນ 2027
@@ -1259,7 +1259,7 @@ export default function HomePage() {
               <span>OFFICIAL EXECUTIVE BOARD • ຄະນະປະທານ ແລະ ຄະນະບໍລິຫານກອງປະກວດ</span>
             </div>
 
-            <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight drop-shadow">
+            <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-normal leading-tight drop-shadow">
               ຄະນະປະທານ ແລະ ຜູ້ບໍລິຫານ{" "}
               <span className="text-amber-300 underline decoration-amber-400/60">
                 ນາງສາວເຜົ່າມົ້ງນະຄອນຫຼວງວຽງຈັນ 2027
@@ -1321,7 +1321,7 @@ export default function HomePage() {
                     <span>{chairman.badge}</span>
                   </div>
 
-                  <h3 className="text-2xl sm:text-4xl font-black text-amber-300 tracking-tight leading-snug">
+                  <h3 className="text-2xl sm:text-4xl font-black text-amber-300 tracking-normal leading-snug">
                     {chairman.name}
                   </h3>
 
@@ -1624,7 +1624,7 @@ export default function HomePage() {
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-2.5">
-                <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-[#240638] tracking-tight whitespace-nowrap">
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-[#240638] tracking-normal whitespace-nowrap">
                   ຜູ້ເຂົ້າປະກວດ ນາງສາວເຜົ່າມົ້ງ 2027
                 </h2>
                 <span className="text-xs font-black px-3 py-1 rounded-full bg-[#f3ebfa] text-[#7e1db3] border border-[#7e1db3]/25 whitespace-nowrap shrink-0">
@@ -1943,7 +1943,7 @@ export default function HomePage() {
               <Crown className="w-4 h-4 text-amber-400" />
               <span>HALL OF FAME • ຫໍກຽດຕິຍົດແຫ່ງມົງກຸດ</span>
             </div>
-            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-normal">
               ອະດີດນາງສາວເຜົ່າມົ້ງນະຄອນຫຼວງວຽງຈັນ
             </h2>
             <p className="text-sm text-purple-200/80 mt-2.5 font-medium leading-relaxed">

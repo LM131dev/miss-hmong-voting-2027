@@ -17,11 +17,17 @@ export default function RootLayout({ children }) {
           crossOrigin="anonymous"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Noto+Serif+Lao:wght@100..900&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@300;400;500;600;700;800;900&family=Noto+Serif+Lao:wght@400;600;700;800&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen bg-[#f8f4fc] text-[#240638] antialiased">
+      <body
+        className="min-h-screen bg-[#f8f4fc] text-[#240638] antialiased"
+        style={{
+          fontFamily:
+            "'Noto Sans Lao', 'Phetsarath OT', 'Lao UI', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        }}
+      >
         {children}
       </body>
     </html>
