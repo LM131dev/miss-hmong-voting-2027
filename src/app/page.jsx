@@ -618,6 +618,21 @@ export default function HomePage() {
     }
   };
 
+  const formatLaoCountdownDate = (dateStr) => {
+    if (!dateStr) return "25 ພະຈິກ 2026";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const months = [
+        "ມັງກອນ", "ກຸມພາ", "ມີນາ", "ເມສາ", "ພຶດສະພາ", "ມິຖຸນາ",
+        "ກໍລະກົດ", "ສິງຫາ", "ກັນຍາ", "ຕຸລາ", "ພະຈິກ", "ທັນວາ"
+      ];
+      return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    } catch {
+      return dateStr;
+    }
+  };
+
   useEffect(() => {
     fetchState();
     const timer = setInterval(fetchState, 8000);
@@ -1082,7 +1097,7 @@ export default function HomePage() {
               {/* Clean Minimal Countdown */}
               <div className="pt-1">
                 <div className="text-[11px] font-bold text-amber-200/90 mb-2">
-                  ນັບຖອຍຫຼັງສູ່ຮອບຕັດສິນ (25 ພະຈິກ 2026)
+                  {settings.countdown_label || "ນັບຖອຍຫຼັງສູ່ຮອບຕັດສິນ"} ({formatLaoCountdownDate(settings.countdown_date)})
                 </div>
                 <div className="grid grid-cols-4 gap-2.5 max-w-sm mx-auto lg:mx-0">
                   {[

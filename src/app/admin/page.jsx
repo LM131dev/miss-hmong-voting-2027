@@ -1851,13 +1851,25 @@ export default function AdminDashboardPage() {
 
                   <div>
                     <label className="block font-bold text-[#644180] mb-1">
-                      ວັນທີນັບຖອຍຫຼັງຮອບຕັດສິນ (Countdown Target Date)
+                      ວັນທີ ແລະ ເວລານັບຖອຍຫຼັງ (Countdown Target Date & Time)
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={settings.countdown_date ? settings.countdown_date.slice(0, 16) : "2026-11-25T18:00"}
+                      onChange={(e) => setSettings({ ...settings, countdown_date: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#f6effc] border border-[#9333ea]/30 text-sm text-[#240638]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-[#644180] mb-1">
+                      ຂໍ້ຄວາມຫົວຂໍ້ນັບຖອຍຫຼັງ (Countdown Label)
                     </label>
                     <input
                       type="text"
-                      value={settings.countdown_date || "2026-11-25T18:00:00"}
-                      onChange={(e) => setSettings({ ...settings, countdown_date: e.target.value })}
-                      placeholder="2026-11-25T18:00:00"
+                      value={settings.countdown_label || "ນັບຖອຍຫຼັງສູ່ຮອບຕັດສິນ"}
+                      onChange={(e) => setSettings({ ...settings, countdown_label: e.target.value })}
+                      placeholder="ນັບຖອຍຫຼັງສູ່ຮອບຕັດສິນ"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-[#f6effc] border border-[#9333ea]/30 text-sm text-[#240638]"
                     />
                   </div>
@@ -1899,6 +1911,7 @@ export default function AdminDashboardPage() {
                         venue_facebook_photos: settings.venue_facebook_photos || "",
                         venue_website: settings.venue_website || "",
                         countdown_date: settings.countdown_date || "2026-11-25T18:00:00",
+                        countdown_label: settings.countdown_label || "ນັບຖອຍຫຼັງສູ່ຮອບຕັດສິນ",
                         liveticker_text: settings.liveticker_text || "",
                         hero_subtitle: settings.hero_subtitle || "",
                       })
@@ -2040,6 +2053,71 @@ export default function AdminDashboardPage() {
                     <Save className="w-4 h-4" />
                     <span>ບັນທຶກການຕັ້ງຄ່າທົ່ວໄປ</span>
                   </button>
+                </div>
+
+                {/* Dedicated Countdown Timer Settings Card */}
+                <div className="md:col-span-2 rounded-3xl bg-white border border-[#9333ea]/25 p-6 shadow-sm space-y-4">
+                  <div className="flex items-center gap-2.5 pb-3 border-b border-[#9333ea]/15">
+                    <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-600">
+                      <Clock className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-base text-[#240638]">
+                        ຕັ້ງຄ່າວັນທີ & ເວລານັບຖອຍຫຼັງຮອບຕັດສິນ (Countdown Timer Settings)
+                      </h3>
+                      <p className="text-xs text-[#644180]">
+                        ກຳນົດວັນທີ ແລະ ເວລາຮອບຕັດສິນ ຫຼື ມື້ປິດໂຫວດ ເພື່ອສະແດງໃນກ່ອງນັບຖອຍຫຼັງໜ້າຫຼັກຂອງເວັບໄຊ
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                    <div>
+                      <label className="block text-xs font-bold text-[#240638] mb-1.5">
+                        ວັນທີ ແລະ ເວລາສິ້ນສຸດ (Target Date & Time):
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={settings.countdown_date ? settings.countdown_date.slice(0, 16) : "2026-11-25T18:00"}
+                        onChange={(e) => setSettings({ ...settings, countdown_date: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#f6effc] border border-[#9333ea]/30 text-sm font-semibold text-[#240638]"
+                      />
+                      <p className="text-[11px] text-[#644180] mt-1">
+                        ຄລິກໄອຄອນປະຕິທິນເພື່ອເລືອກວັນທີ ແລະ ເວລາໄດ້ງ່າຍດາຍ
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-[#240638] mb-1.5">
+                        ຂໍ້ຄວາມຫົວຂໍ້ນັບຖອຍຫຼັງ (Countdown Label):
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.countdown_label || "ນັບຖອຍຫຼັງສູ່ຮອບຕັດສິນ"}
+                        onChange={(e) => setSettings({ ...settings, countdown_label: e.target.value })}
+                        placeholder="ນັບຖອຍຫຼັງສູ່ຮອບຕັດສິນ"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#f6effc] border border-[#9333ea]/30 text-sm font-semibold text-[#240638]"
+                      />
+                      <p className="text-[11px] text-[#644180] mt-1">
+                        ຕົວຢ່າງ: ນັບຖອຍຫຼັງສູ່ຮອບຕັດສິນ, ນັບຖອຍຫຼັງສູ່ມື້ປິດຮັບໂຫວດ
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex justify-end">
+                    <button
+                      onClick={() =>
+                        callAdminApi("UPDATE_SETTINGS", {
+                          countdown_date: settings.countdown_date || "2026-11-25T18:00:00",
+                          countdown_label: settings.countdown_label || "ນັບຖອຍຫຼັງສູ່ຮອບຕັດສິນ",
+                        })
+                      }
+                      className="px-6 py-3 rounded-xl font-black text-xs btn-garden-vote flex items-center gap-2 cursor-pointer shadow-md whitespace-nowrap"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>ບັນທຶກວັນທີ & ເວລານັບຖອຍຫຼັງ</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Dedicated Security & Password Management Card */}
