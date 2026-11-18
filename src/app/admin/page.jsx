@@ -972,8 +972,8 @@ export default function AdminDashboardPage() {
                         bio: "",
                         image_url: "",
                         traditional_image_url: "",
-                        total_votes: 1000,
-                        hearts: 200,
+                        total_votes: 0,
+                        hearts: 0,
                         is_active: 1,
                       })
                     }
@@ -1009,7 +1009,7 @@ export default function AdminDashboardPage() {
                         <h3 className="font-black text-sm text-[#240638] mt-1 truncate">{c.name}</h3>
                         <div className="text-xs text-[#520d7a] font-bold mt-0.5 whitespace-nowrap">
                           {c.total_votes.toLocaleString()} <span className="text-[10px]">Votes</span> •{" "}
-                          <span className="text-rose-600">{c.hearts || 120} ♥</span>
+                          <span className="text-rose-600">{c.hearts ?? 0} ♥</span>
                         </div>
                         <div className="text-[11px] text-[#644180] truncate mt-0.5">
                           {c.ethnic_group}
@@ -2324,7 +2324,7 @@ export default function AdminDashboardPage() {
                 <label className="block text-[#644180] font-semibold mb-1">ຍອດຫົວໃຈ ♥</label>
                 <input
                   type="number"
-                  value={editingContestant.hearts || 120}
+                  value={editingContestant.hearts ?? 0}
                   onChange={(e) =>
                     setEditingContestant({ ...editingContestant, hearts: Number(e.target.value) })
                   }

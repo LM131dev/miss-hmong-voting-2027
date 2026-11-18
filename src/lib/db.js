@@ -354,7 +354,7 @@ function initSchema(db) {
       image_url TEXT NOT NULL,
       traditional_image_url TEXT NOT NULL DEFAULT '',
       total_votes INTEGER NOT NULL DEFAULT 0,
-      hearts INTEGER NOT NULL DEFAULT 120,
+      hearts INTEGER NOT NULL DEFAULT 0,
       is_active INTEGER NOT NULL DEFAULT 1
     );
   `);
@@ -482,7 +482,7 @@ function initSchema(db) {
     db.exec("ALTER TABLE contestants ADD COLUMN traditional_image_url TEXT NOT NULL DEFAULT ''");
   } catch {}
   try {
-    db.exec("ALTER TABLE contestants ADD COLUMN hearts INTEGER NOT NULL DEFAULT 128");
+    db.exec("ALTER TABLE contestants ADD COLUMN hearts INTEGER NOT NULL DEFAULT 0");
   } catch {}
   try {
     db.exec("ALTER TABLE vote_transactions ADD COLUMN cheer_message TEXT NOT NULL DEFAULT ''");

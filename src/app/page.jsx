@@ -783,7 +783,7 @@ export default function HomePage() {
     setTimeout(() => setHeartPopId(null), 650);
     setContestants((prev) =>
       prev.map((item) =>
-        item.id === c.id ? { ...item, hearts: (item.hearts || 120) + 1 } : item
+        item.id === c.id ? { ...item, hearts: (item.hearts ?? 0) + 1 } : item
       )
     );
     try {
@@ -1886,7 +1886,7 @@ export default function HomePage() {
                         title="ກົດສົ່ງຫົວໃຈເຊຍຟຣີ!"
                       >
                         <Heart className="w-3.5 h-3.5 fill-current" />
-                        <span>{c.hearts || 128}</span>
+                        <span>{c.hearts ?? 0}</span>
                       </button>
                       <button
                         type="button"

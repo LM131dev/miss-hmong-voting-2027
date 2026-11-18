@@ -187,7 +187,7 @@ export async function POST(req) {
           finalImg,
           finalTradImg,
           Number(total_votes) || 0,
-          Number(hearts) || 120,
+          Number.isFinite(Number(hearts)) ? Number(hearts) : 0,
           is_active ? 1 : 0,
           Number(id)
         );
@@ -207,7 +207,7 @@ export async function POST(req) {
           finalImg,
           finalTradImg,
           Number(total_votes) || 0,
-          Number(hearts) || 120
+          Number.isFinite(Number(hearts)) ? Number(hearts) : 0
         );
       }
 

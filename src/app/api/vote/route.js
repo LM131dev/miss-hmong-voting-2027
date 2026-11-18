@@ -13,9 +13,9 @@ export async function POST(req) {
     // Support quick free heart cheer reaction
     if (body.action === "HEART") {
       const cId = Number(body.contestant_id);
-      db.prepare("UPDATE contestants SET hearts = COALESCE(hearts, 100) + 1 WHERE id = ?").run(cId);
+      db.prepare("UPDATE contestants SET hearts = COALESCE(hearts, 0) + 1 WHERE id = ?").run(cId);
       const row = db.prepare("SELECT hearts FROM contestants WHERE id = ?").get(cId);
-      return NextResponse.json({ success: true, hearts: row?.hearts || 1 });
+      return NextResponse.json({ success: true, hearts: row?.hearts ?? 1 });
     }
 
     const {
@@ -122,7 +122,7 @@ export async function POST(req) {
 
     if (status === "APPROVED") {
       db.prepare(
-        "UPDATE contestants SET total_votes = total_votes + ?, hearts = COALESCE(hearts, 100) + 5 WHERE id = ?"
+        "UPDATE contestants SET total_votes = total_votes + ?, hearts = COALESCE(hearts, 0) + 5 WHERE id = ?"
       ).run(pkg.points, contestant.id);
     }
 
