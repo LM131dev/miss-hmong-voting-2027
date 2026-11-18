@@ -823,7 +823,7 @@ export default function HomePage() {
     } catch {}
   };
 
-  const handleVoteSubmit = async (instantDemo) => {
+  const handleVoteSubmit = async () => {
     if (!votingContestant || !selectedPkg) return;
     setSubmittingVote(true);
     try {
@@ -838,7 +838,6 @@ export default function HomePage() {
           cheer_message: cheerMessage,
           payment_ref: paymentRef,
           slip_image_url: slipPreview,
-          instant_demo: instantDemo,
         }),
       });
       const data = await res.json();
@@ -3656,7 +3655,7 @@ export default function HomePage() {
                           <button
                             type="button"
                             disabled={submittingVote}
-                            onClick={() => handleVoteSubmit(false)}
+                            onClick={handleVoteSubmit}
                             className="w-full py-3.5 px-5 rounded-xl font-black text-sm flex items-center justify-center gap-2 btn-garden-vote shadow-md cursor-pointer transition"
                           >
                             {submittingVote ? (
@@ -3670,18 +3669,6 @@ export default function HomePage() {
                               </>
                             )}
                           </button>
-
-                          {/* Secondary instant demo button for convenience */}
-                          <div className="text-center pt-1">
-                            <button
-                              type="button"
-                              disabled={submittingVote}
-                              onClick={() => handleVoteSubmit(true)}
-                              className="text-[11px] text-[#644180] hover:text-[#520d7a] underline cursor-pointer"
-                            >
-                              ⚡ ທົດສອບໂຫວດອະນຸມັດທັນທີ (Instant Approval Demo)
-                            </button>
-                          </div>
                         </div>
                       </div>
                     </div>

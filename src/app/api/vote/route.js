@@ -26,7 +26,6 @@ export async function POST(req) {
       cheer_message,
       payment_ref,
       slip_image_url,
-      instant_demo,
     } = body;
 
     const votingOpenRow = db
@@ -67,7 +66,7 @@ export async function POST(req) {
       .get();
 
     const shouldApproveImmediately =
-      Boolean(instant_demo) || (autoApproveRow && autoApproveRow.value === "true");
+      Boolean(autoApproveRow && autoApproveRow.value === "true");
 
     const status = shouldApproveImmediately ? "APPROVED" : "PENDING";
     const cleanVoterName = (voter_name || "").trim() || "ຜູ້ສະໜັບສະໜູນ ສວນບັນດາເຜົ່າ";
