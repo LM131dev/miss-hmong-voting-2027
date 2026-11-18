@@ -40,7 +40,224 @@ import {
   ShieldCheck,
   User,
   KeyRound,
+  Upload,
+  Loader2,
+  Camera,
 } from "lucide-react";
+
+// Reusable Direct Image Upload Field for Backoffice
+function ImageUploadField({
+  label,
+  value,
+  onChange,
+  folder = "contestants",
+  placeholder = "ເລືອກຮູບ ຫຼື ວາງລິ້ງ",
+  className = "",
+}) {
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = React.useRef(null);
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("folder", folder);
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "ອັບໂຫລດບໍ່ສຳເລັດ");
+        return;
+      }
+      onChange(data.url);
+    } catch (err) {
+      alert("ເກີດຂໍ້ຜິດພາດໃນການອັບໂຫລດ: " + err.message);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className={className}>
+      <label className="block text-[#644180] font-semibold mb-1 text-xs">
+        {label}
+      </label>
+      <div className="flex items-start gap-3 p-3 rounded-2xl bg-[#f6effc]/80 border border-[#9333ea]/25 shadow-xs">
+        {/* Preview Thumbnail */}
+        <div className="w-16 h-20 rounded-xl overflow-hidden border border-[#9333ea]/30 bg-black/5 shrink-0 flex items-center justify-center relative shadow-xs">
+          {value ? (
+            <img
+              src={value}
+              alt="Preview"
+              className="w-full h-full object-cover object-top"
+              onError={(e) => {
+                e.target.style.display = "none";
+              }}
+            />
+          ) : (
+            <ImageIcon className="w-6 h-6 text-[#9333ea]/40" />
+          )}
+          {uploading && (
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-xs">
+              <Loader2 className="w-5 h-5 text-amber-400 animate-spin" />
+            </div>
+          )}
+        </div>
+
+        {/* Upload Button & Controls */}
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+              className="hidden"
+            />
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={() => fileInputRef.current?.click()}
+              className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs flex items-center gap-1.5 transition shadow-xs cursor-pointer disabled:opacity-50"
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>ກຳລັງອັບໂຫລດ...</span>
+                </>
+              ) : (
+                <>
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>ເລືອກຮູບຈາກເຄື່ອງ / ໂທລະສັບ</span>
+                </>
+              )}
+            </button>
+            {value && (
+              <button
+                type="button"
+                onClick={() => onChange("")}
+                className="px-2.5 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold text-xs flex items-center gap-1 transition cursor-pointer"
+                title="ລຶບຮູບ"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>ລຶບ</span>
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <input
+              type="text"
+              value={value || ""}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder={placeholder}
+              className="w-full px-2.5 py-1 rounded-lg bg-white border border-[#9333ea]/20 text-[11px] font-mono text-[#240638] focus:outline-none focus:border-purple-500"
+            />
+          </div>
+          <p className="text-[10px] text-zinc-500">
+            ຮອງຮັບ JPG, PNG, WEBP (ສູງສຸດ 25MB) • ກົດປຸ່ມສີມ່ວງເພື່ອເລືອກຮູບໄດ້ທັນທີ
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Multi-image upload for News & Activities
+function NewsImageUploadField({ imagesJson, onChange }) {
+  const [uploading, setUploading] = useState(false);
+  const fileRef = React.useRef(null);
+
+  let list = [];
+  try {
+    if (typeof imagesJson === "string") {
+      list = JSON.parse(imagesJson || "[]");
+    } else if (Array.isArray(imagesJson)) {
+      list = imagesJson;
+    }
+  } catch {
+    list = [];
+  }
+
+  const handleUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("folder", "news");
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        const nextList = [...list, data.url];
+        onChange(JSON.stringify(nextList));
+      } else {
+        alert(data.error || "ອັບໂຫລດບໍ່ສຳເລັດ");
+      }
+    } catch (err) {
+      alert("ອັບໂຫລດຜິດພາດ: " + err.message);
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const removeImg = (index) => {
+    const nextList = list.filter((_, i) => i !== index);
+    onChange(JSON.stringify(nextList));
+  };
+
+  return (
+    <div>
+      <label className="block text-[#644180] font-semibold mb-1 text-xs">
+        ຮູບພາບປະກອບຂ່າວສານ & ກິດຈະກຳ
+      </label>
+      <div className="p-3 rounded-2xl bg-[#f6effc]/70 border border-[#9333ea]/25 space-y-3">
+        <div className="flex flex-wrap gap-2">
+          {list.map((url, i) => (
+            <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border border-[#9333ea]/30 bg-white shadow-xs">
+              <img src={url} alt={`News ${i}`} className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => removeImg(i)}
+                className="absolute top-1 right-1 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px] opacity-90 hover:opacity-100 transition shadow cursor-pointer"
+                title="ລຶບຮູບນີ້"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+          <input type="file" ref={fileRef} onChange={handleUpload} accept="image/*" className="hidden" />
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => fileRef.current?.click()}
+            className="w-20 h-20 rounded-xl border-2 border-dashed border-[#9333ea]/40 hover:border-purple-600 bg-white hover:bg-purple-50 flex flex-col items-center justify-center text-[#9333ea] transition cursor-pointer disabled:opacity-50"
+          >
+            {uploading ? (
+              <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
+            ) : (
+              <>
+                <Upload className="w-5 h-5 mb-1" />
+                <span className="text-[10px] font-bold">+ ເພີ່ມຮູບ</span>
+              </>
+            )}
+          </button>
+        </div>
+        <p className="text-[10px] text-zinc-500">
+          ກົດ "+ ເພີ່ມຮູບ" ເພື່ອເລືອກຮູບຈາກເຄື່ອງ ຫຼື ໂທລະສັບ (ສາມາດເພີ່ມໄດ້ຫຼາຍຮູບ)
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminDashboardPage() {
   // Authentication states
@@ -89,6 +306,9 @@ export default function AdminDashboardPage() {
   });
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
+  const [qrCacheBust, setQrCacheBust] = useState(Date.now());
+  const [qrUploading, setQrUploading] = useState(false);
+  const qrInputRef = React.useRef(null);
 
   // Edit Modals states
   const [editingContestant, setEditingContestant] = useState(null);
@@ -2004,24 +2224,81 @@ export default function AdminDashboardPage() {
                     />
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-[#f6effc] border border-[#9333ea]/25 flex items-center gap-4">
-                    <div className="w-20 h-20 bg-white border border-[#9333ea]/30 rounded-xl p-1.5 flex items-center justify-center shrink-0 shadow-xs">
+                  <div className="p-4 rounded-2xl bg-[#f6effc] border border-[#9333ea]/25 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    <div className="w-24 h-24 bg-white border border-[#9333ea]/30 rounded-xl p-1.5 flex items-center justify-center shrink-0 shadow-xs relative">
                       <img
-                        src="/official_lao_qr.png"
+                        src={`/official_lao_qr.png?v=${qrCacheBust}`}
                         alt="Official Lao QR"
                         className="w-full h-full object-contain"
                       />
+                      {qrUploading && (
+                        <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center">
+                          <Loader2 className="w-5 h-5 text-amber-400 animate-spin" />
+                        </div>
+                      )}
                     </div>
-                    <div>
+                    <div className="flex-1 space-y-2">
                       <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[11px] font-black">
                         ✓ ໃຊ້ງານ Lao QR ທາງການຂອງກອງປະກວດ
                       </div>
-                      <h4 className="font-black text-sm text-[#240638] mt-1">
+                      <h4 className="font-black text-sm text-[#240638]">
                         Official Lao QR Code (BCEL One / APB / ທຸກທະນາຄານ)
                       </h4>
-                      <p className="text-xs text-[#644180] mt-0.5">
-                        ໄຟລ໌: public/official_lao_qr.png ຖືກເຊື່ອມຕໍ່ເຂົ້າສູ່ໜ້າຕ່າງໂຫວດຂອງເວັບໄຊທຸກຈຸດຮຽບຮ້ອຍແລ້ວ
+                      <p className="text-xs text-[#644180]">
+                        ໄຟລ໌: public/official_lao_qr.png ຖືກເຊື່ອມຕໍ່ເຂົ້າສູ່ໜ້າຕ່າງໂຫວດຂອງເວັບໄຊທຸກຈຸດ
                       </p>
+                      <div>
+                        <input
+                          type="file"
+                          ref={qrInputRef}
+                          accept="image/png,image/jpeg,image/jpg,image/webp"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setQrUploading(true);
+                            try {
+                              const fd = new FormData();
+                              fd.append("file", file);
+                              fd.append("folder", "qr");
+                              const res = await fetch("/api/admin/upload", {
+                                method: "POST",
+                                body: fd,
+                              });
+                              const data = await res.json();
+                              if (res.ok) {
+                                setQrCacheBust(Date.now());
+                                showNotice("✓ ອັບໂຫລດປ່ຽນຮູບ Lao QR ໃໝ່ສຳເລັດແລ້ວ!");
+                              } else {
+                                alert(data.error || "ອັບໂຫລດບໍ່ສຳເລັດ");
+                              }
+                            } catch (err) {
+                              alert("ເກີດຂໍ້ຜິດພາດ: " + err.message);
+                            } finally {
+                              setQrUploading(false);
+                              if (qrInputRef.current) qrInputRef.current.value = "";
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          disabled={qrUploading}
+                          onClick={() => qrInputRef.current?.click()}
+                          className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs flex items-center gap-1.5 transition shadow-xs cursor-pointer disabled:opacity-50"
+                        >
+                          {qrUploading ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <span>ກຳລັງອັບໂຫລດ...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-3.5 h-3.5" />
+                              <span>ອັບໂຫລດປ່ຽນຮູບ Lao QR ໃໝ່</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -2279,32 +2556,26 @@ export default function AdminDashboardPage() {
               </div>
 
               <div className="col-span-2">
-                <label className="block text-[#644180] font-semibold mb-1">
-                  ລິ້ງຮູບຊຸດມົ້ງດັ້ງເດີມ (Traditional Costume Photo)
-                </label>
-                <input
-                  type="text"
+                <ImageUploadField
+                  label="ຮູບຊຸດມົ້ງດັ້ງເດີມ (Traditional Costume Photo)"
                   value={editingContestant.traditional_image_url || ""}
-                  onChange={(e) =>
-                    setEditingContestant({ ...editingContestant, traditional_image_url: e.target.value })
+                  onChange={(url) =>
+                    setEditingContestant({ ...editingContestant, traditional_image_url: url })
                   }
+                  folder="contestants"
                   placeholder="/contestants/traditional_hm01.jpg"
-                  className="w-full px-3 py-2 rounded-xl bg-[#f6effc] border border-[#9333ea]/30 text-[#240638]"
                 />
               </div>
 
               <div className="col-span-2">
-                <label className="block text-[#644180] font-semibold mb-1">
-                  ລິ້ງຮູບຊຸດປະດັບຄຳ (Phouvong Gold Jewelry Photo)
-                </label>
-                <input
-                  type="text"
+                <ImageUploadField
+                  label="ຮູບຊຸດປະດັບຄຳ (Phouvong Gold Jewelry Photo)"
                   value={editingContestant.image_url || ""}
-                  onChange={(e) =>
-                    setEditingContestant({ ...editingContestant, image_url: e.target.value })
+                  onChange={(url) =>
+                    setEditingContestant({ ...editingContestant, image_url: url })
                   }
+                  folder="contestants"
                   placeholder="/contestants/hm06.jpg"
-                  className="w-full px-3 py-2 rounded-xl bg-[#f6effc] border border-[#9333ea]/30 text-[#240638]"
                 />
               </div>
 
@@ -2460,17 +2731,14 @@ export default function AdminDashboardPage() {
             </div>
 
             <div>
-              <label className="block text-[#644180] font-semibold mb-1">
-                ລິ້ງຮູບພາບ (Image URL)
-              </label>
-              <input
-                type="text"
+              <ImageUploadField
+                label="ຮູບພາບນາງງາມ (Queen Photo)"
                 value={editingPastQueen.image_url || ""}
-                onChange={(e) =>
-                  setEditingPastQueen({ ...editingPastQueen, image_url: e.target.value })
+                onChange={(url) =>
+                  setEditingPastQueen({ ...editingPastQueen, image_url: url })
                 }
+                folder="queens"
                 placeholder="/api/avatar?code=2020&bg=purple..."
-                className="w-full px-3 py-2 rounded-xl bg-[#f6effc] border border-[#9333ea]/30 text-[#240638]"
               />
             </div>
 
@@ -2580,13 +2848,12 @@ export default function AdminDashboardPage() {
               </div>
 
               <div>
-                <label className="block text-[#644180] font-semibold mb-1">ລິ້ງຮູບພາບ (Image URL)</label>
-                <input
-                  type="text"
+                <ImageUploadField
+                  label="ຮູບພາບຄະນະກຳມະການ (Member Photo)"
                   value={editingCommittee.image || ""}
-                  onChange={(e) => setEditingCommittee({ ...editingCommittee, image: e.target.value })}
+                  onChange={(url) => setEditingCommittee({ ...editingCommittee, image: url })}
+                  folder="committee"
                   placeholder="/committee/img3.jpg"
-                  className="w-full px-3 py-2 rounded-xl bg-[#f6effc] border border-[#9333ea]/30"
                 />
               </div>
 
@@ -3045,21 +3312,14 @@ export default function AdminDashboardPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-[#644180] font-semibold mb-1">
-                  ລິ້ງຮູບພາບ (JSON array ຮູບ)
-                </label>
-                <input
-                  type="text"
-                  value={
-                    typeof editingNews.images_json === "string"
-                      ? editingNews.images_json
-                      : JSON.stringify(editingNews.images || [])
-                  }
-                  onChange={(e) => setEditingNews({ ...editingNews, images_json: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-[#f6effc] border border-[#9333ea]/30 font-mono text-[11px]"
-                />
-              </div>
+              <NewsImageUploadField
+                imagesJson={
+                  typeof editingNews.images_json === "string"
+                    ? editingNews.images_json
+                    : JSON.stringify(editingNews.images || [])
+                }
+                onChange={(json) => setEditingNews({ ...editingNews, images_json: json })}
+              />
             </div>
 
             <div className="flex justify-end gap-2 pt-3 border-t border-gray-200">
