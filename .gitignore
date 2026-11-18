@@ -30,3 +30,10 @@ Thumbs.db
 *.sqlite-wal
 *.sqlite-shm
 *.db-journal
+
+# Quotation documents
+Quotation_*
+ໃບສະເໜີລາຄາ_*
+
+# Uploaded test slips
+public/uploads/slips/slip_*
