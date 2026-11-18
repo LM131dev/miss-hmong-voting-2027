@@ -771,8 +771,37 @@ export default function HomePage() {
       return;
     }
     const reader = new FileReader();
-    reader.onload = () => {
-      setSlipPreview(reader.result);
+    reader.onload = (loadEvt) => {
+      const img = new window.Image();
+      img.onload = () => {
+        try {
+          const MAX_SIZE = 1280;
+          let w = img.width;
+          let h = img.height;
+          if (w > MAX_SIZE || h > MAX_SIZE) {
+            if (w > h) {
+              h = Math.round((h * MAX_SIZE) / w);
+              w = MAX_SIZE;
+            } else {
+              w = Math.round((w * MAX_SIZE) / h);
+              h = MAX_SIZE;
+            }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, w, h);
+          const compressed = canvas.toDataURL("image/jpeg", 0.85);
+          setSlipPreview(compressed);
+        } catch {
+          setSlipPreview(loadEvt.target?.result);
+        }
+      };
+      img.onerror = () => {
+        setSlipPreview(loadEvt.target?.result);
+      };
+      img.src = loadEvt.target?.result;
     };
     reader.readAsDataURL(file);
   };

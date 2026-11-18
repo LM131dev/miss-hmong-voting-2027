@@ -82,11 +82,17 @@ export async function POST(req) {
     let finalSlipUrl = String(slip_image_url || "").trim();
     if (finalSlipUrl.startsWith("data:image/")) {
       try {
-        const matches = finalSlipUrl.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
-        if (matches) {
-          const ext = matches[1] === "jpeg" ? "jpg" : matches[1];
-          const buffer = Buffer.from(matches[2], "base64");
-          const filename = `slip_${Date.now()}_${Math.floor(Math.random() * 1000)}.${ext}`;
+        const commaIdx = finalSlipUrl.indexOf(",");
+        if (commaIdx !== -1) {
+          const header = finalSlipUrl.slice(0, commaIdx).toLowerCase();
+          const rawBase64 = finalSlipUrl.slice(commaIdx + 1).replace(/\s/g, "");
+          let ext = "jpg";
+          if (header.includes("png")) ext = "png";
+          else if (header.includes("webp")) ext = "webp";
+          else if (header.includes("gif")) ext = "gif";
+
+          const buffer = Buffer.from(rawBase64, "base64");
+          const filename = `slip_${Date.now()}_${Math.floor(Math.random() * 10000)}.${ext}`;
           const dirPath = path.join(process.cwd(), "public", "uploads", "slips");
           if (!fs.existsSync(dirPath)) {
             fs.mkdirSync(dirPath, { recursive: true });

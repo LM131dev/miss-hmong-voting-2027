@@ -3443,13 +3443,40 @@ export default function AdminDashboardPage() {
 
             <div className="p-6 space-y-4">
               {/* Full Image Preview */}
-              <div className="rounded-2xl border border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center max-h-[420px]">
-                <img
-                  src={viewingSlip.slip_image_url}
-                  alt="Bank Slip"
-                  className="w-full h-full object-contain max-h-[400px]"
-                />
+              <div className="rounded-2xl border border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center min-h-[220px] max-h-[420px] p-2 relative">
+                {viewingSlip.slip_image_url ? (
+                  <img
+                    src={viewingSlip.slip_image_url}
+                    alt="Bank Slip"
+                    className="w-full h-full object-contain max-h-[400px] rounded-xl"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "/api/avatar?code=SLIP&bg=purple&name=" + encodeURIComponent(viewingSlip.payment_ref || "Slip");
+                    }}
+                  />
+                ) : (
+                  <div className="text-center p-6 text-gray-400">
+                    <ImageIcon className="w-10 h-10 mx-auto mb-1 opacity-40" />
+                    <p className="text-xs">ບໍ່ມີຮູບໃບບິນແນບມາ</p>
+                  </div>
+                )}
               </div>
+              {viewingSlip.slip_image_url && (
+                <div className="flex justify-between items-center text-[11px] px-1">
+                  <a
+                    href={viewingSlip.slip_image_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-purple-600 hover:text-purple-800 font-bold flex items-center gap-1 underline"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>ເປີດເບິ່ງຮູບເຕັມຂະໜາດໃຫຍ່ (Open Full Image)</span>
+                  </a>
+                  <span className="text-gray-400 font-mono truncate max-w-[200px]">
+                    {viewingSlip.slip_image_url}
+                  </span>
+                </div>
+              )}
 
               {/* Transaction Summary Card */}
               <div className="bg-[#fcfaff] border border-[#9333ea]/20 rounded-2xl p-4 text-xs space-y-2 text-[#240638]">

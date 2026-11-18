@@ -44,6 +44,12 @@ server {
 
     client_max_body_size 30M;
 
+    location /uploads/ {
+        alias /var/www/miss-hmong-voting/public/uploads/;
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+    }
+
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
