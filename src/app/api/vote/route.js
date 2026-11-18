@@ -79,29 +79,50 @@ export async function POST(req) {
     const nowStr = new Date().toISOString().replace("T", " ").slice(0, 19);
 
     let finalSlipUrl = String(slip_image_url || "").trim();
+    if (!finalSlipUrl || (!finalSlipUrl.startsWith("data:image/") && !finalSlipUrl.startsWith("/uploads/"))) {
+      return NextResponse.json(
+        { error: "ກະລຸນາອັບໂຫຼດຮູບໃບບິນໂອນເງິນ (Bank Slip) ກ່ອນຢືນຢັນການໂຫວດ" },
+        { status: 400 }
+      );
+    }
+
     if (finalSlipUrl.startsWith("data:image/")) {
       try {
         const commaIdx = finalSlipUrl.indexOf(",");
-        if (commaIdx !== -1) {
-          const header = finalSlipUrl.slice(0, commaIdx).toLowerCase();
-          const rawBase64 = finalSlipUrl.slice(commaIdx + 1).replace(/\s/g, "");
-          let ext = "jpg";
-          if (header.includes("png")) ext = "png";
-          else if (header.includes("webp")) ext = "webp";
-          else if (header.includes("gif")) ext = "gif";
-
-          const buffer = Buffer.from(rawBase64, "base64");
-          const filename = `slip_${Date.now()}_${Math.floor(Math.random() * 10000)}.${ext}`;
-          const dirPath = path.join(process.cwd(), "public", "uploads", "slips");
-          if (!fs.existsSync(dirPath)) {
-            fs.mkdirSync(dirPath, { recursive: true });
-          }
-          const filePath = path.join(dirPath, filename);
-          fs.writeFileSync(filePath, buffer);
-          finalSlipUrl = `/uploads/slips/${filename}`;
+        if (commaIdx === -1) {
+          return NextResponse.json(
+            { error: "ຮູບແບບໄຟລ໌ໃບບິນບໍ່ຖືກຕ້ອງ ກະລຸນາອັບໂຫຼດໃໝ່" },
+            { status: 400 }
+          );
         }
+        const header = finalSlipUrl.slice(0, commaIdx).toLowerCase();
+        const rawBase64 = finalSlipUrl.slice(commaIdx + 1).replace(/\s/g, "");
+        let ext = "jpg";
+        if (header.includes("png")) ext = "png";
+        else if (header.includes("webp")) ext = "webp";
+        else if (header.includes("gif")) ext = "gif";
+
+        const buffer = Buffer.from(rawBase64, "base64");
+        if (buffer.length < 100) {
+          return NextResponse.json(
+            { error: "ໄຟລ໌ຮູບໃບບິນບໍ່ສົມບູນ ກະລຸນາເລືອກຮູບໃໝ່" },
+            { status: 400 }
+          );
+        }
+        const filename = `slip_${Date.now()}_${Math.floor(Math.random() * 10000)}.${ext}`;
+        const dirPath = path.join(process.cwd(), "public", "uploads", "slips");
+        if (!fs.existsSync(dirPath)) {
+          fs.mkdirSync(dirPath, { recursive: true });
+        }
+        const filePath = path.join(dirPath, filename);
+        fs.writeFileSync(filePath, buffer);
+        finalSlipUrl = `/uploads/slips/${filename}`;
       } catch (err) {
         console.error("Failed to save slip file:", err);
+        return NextResponse.json(
+          { error: "ບໍ່ສາມາດບັນທຶກຮູບໃບບິນໄດ້ ກະລຸນາລອງໃໝ່" },
+          { status: 400 }
+        );
       }
     }
 

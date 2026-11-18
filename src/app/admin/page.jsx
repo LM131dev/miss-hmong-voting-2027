@@ -307,8 +307,61 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const [qrCacheBust, setQrCacheBust] = useState(Date.now());
-  const [qrUploading, setQrUploading] = useState(false);
-  const qrInputRef = React.useRef(null);
+  const [uploadingQrKey, setUploadingQrKey] = useState(null);
+
+  const QR_CURRENCIES = [
+    {
+      key: "qr_lak_url",
+      folder: "qr",
+      badge: "LAK • ₭",
+      badgeCls: "bg-emerald-100 text-emerald-800",
+      title: "Lao QR Code (ເງິນກີບ - ສະແກນໄດ້ທຸກທະນາຄານ)",
+      subtitle: "ຮອງຮັບ BCEL One, APB, LDB, JDB ແລະ ທຸກແອັບທະນາຄານລາວ",
+      defaultUrl: "/official_lao_qr.png",
+    },
+    {
+      key: "qr_thb_url",
+      folder: "qr_thb",
+      badge: "THB • ฿",
+      badgeCls: "bg-sky-100 text-sky-800",
+      title: "Thai Baht QR Code (ເງິນບາດ / PromptPay)",
+      subtitle: "ສຳລັບຜູ້ໂຫວດທີ່ສະແກນຈ່າຍຜ່ານບັນຊີທະນາຄານໄທ (THB)",
+      defaultUrl: "",
+    },
+    {
+      key: "qr_usd_url",
+      folder: "qr_usd",
+      badge: "USD • $",
+      badgeCls: "bg-amber-100 text-amber-800",
+      title: "USD QR Code (ເງິນໂດລາສະຫະລັດ)",
+      subtitle: "ສຳລັບຜູ້ໂຫວດທີ່ຊຳລະຜ່ານ QR ສະກຸນເງິນໂດລາ (USD)",
+      defaultUrl: "",
+    },
+  ];
+
+  const handleUploadCurrencyQr = async (item, file) => {
+    if (!file) return;
+    setUploadingQrKey(item.key);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("folder", item.folder);
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "ອັບໂຫລດບໍ່ສຳເລັດ");
+        return;
+      }
+      setSettings((prev) => ({ ...prev, [item.key]: data.url }));
+      setQrCacheBust(Date.now());
+      await callAdminApi("UPDATE_SETTINGS", { [item.key]: data.url });
+      showNotice(`✓ ອັບໂຫລດ ແລະ ບັນທຶກຮູບ ${item.badge} QR ສຳເລັດແລ້ວ!`);
+    } catch (err) {
+      alert("ເກີດຂໍ້ຜິດພາດ: " + err.message);
+    } finally {
+      setUploadingQrKey(null);
+    }
+  };
 
   // Edit Modals states
   const [editingContestant, setEditingContestant] = useState(null);
@@ -2224,82 +2277,106 @@ export default function AdminDashboardPage() {
                     />
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-[#f6effc] border border-[#9333ea]/25 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                    <div className="w-24 h-24 bg-white border border-[#9333ea]/30 rounded-xl p-1.5 flex items-center justify-center shrink-0 shadow-xs relative">
-                      <img
-                        src={`/official_lao_qr.png?v=${qrCacheBust}`}
-                        alt="Official Lao QR"
-                        className="w-full h-full object-contain"
-                      />
-                      {qrUploading && (
-                        <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center">
-                          <Loader2 className="w-5 h-5 text-amber-400 animate-spin" />
-                        </div>
-                      )}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="block font-black text-sm text-[#240638]">
+                        ຕັ້ງຄ່າຮູບ QR Code ຮັບເງິນໂຫວດ (LAK / THB / USD)
+                      </label>
+                      <span className="text-[11px] font-semibold text-[#644180]">
+                        ອັບໂຫລດແລ້ວບັນທຶກອັດຕະໂນມັດທັນທີ
+                      </span>
                     </div>
-                    <div className="flex-1 space-y-2">
-                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[11px] font-black">
-                        ✓ ໃຊ້ງານ Lao QR ທາງການຂອງກອງປະກວດ
-                      </div>
-                      <h4 className="font-black text-sm text-[#240638]">
-                        Official Lao QR Code (BCEL One / APB / ທຸກທະນາຄານ)
-                      </h4>
-                      <p className="text-xs text-[#644180]">
-                        ໄຟລ໌: public/official_lao_qr.png ຖືກເຊື່ອມຕໍ່ເຂົ້າສູ່ໜ້າຕ່າງໂຫວດຂອງເວັບໄຊທຸກຈຸດ
-                      </p>
-                      <div>
-                        <input
-                          type="file"
-                          ref={qrInputRef}
-                          accept="image/png,image/jpeg,image/jpg,image/webp"
-                          className="hidden"
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            setQrUploading(true);
-                            try {
-                              const fd = new FormData();
-                              fd.append("file", file);
-                              fd.append("folder", "qr");
-                              const res = await fetch("/api/admin/upload", {
-                                method: "POST",
-                                body: fd,
-                              });
-                              const data = await res.json();
-                              if (res.ok) {
-                                setQrCacheBust(Date.now());
-                                showNotice("✓ ອັບໂຫລດປ່ຽນຮູບ Lao QR ໃໝ່ສຳເລັດແລ້ວ!");
-                              } else {
-                                alert(data.error || "ອັບໂຫລດບໍ່ສຳເລັດ");
-                              }
-                            } catch (err) {
-                              alert("ເກີດຂໍ້ຜິດພາດ: " + err.message);
-                            } finally {
-                              setQrUploading(false);
-                              if (qrInputRef.current) qrInputRef.current.value = "";
-                            }
-                          }}
-                        />
-                        <button
-                          type="button"
-                          disabled={qrUploading}
-                          onClick={() => qrInputRef.current?.click()}
-                          className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs flex items-center gap-1.5 transition shadow-xs cursor-pointer disabled:opacity-50"
+
+                    {QR_CURRENCIES.map((item) => {
+                      const rawUrl = settings[item.key] || item.defaultUrl;
+                      const previewUrl = rawUrl
+                        ? `${rawUrl}${rawUrl.includes("?") ? "&" : "?"}v=${qrCacheBust}`
+                        : "";
+                      const isUploading = uploadingQrKey === item.key;
+
+                      return (
+                        <div
+                          key={item.key}
+                          className="p-4 rounded-2xl bg-[#f6effc] border border-[#9333ea]/25 flex flex-col sm:flex-row items-start sm:items-center gap-4"
                         >
-                          {qrUploading ? (
-                            <>
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              <span>ກຳລັງອັບໂຫລດ...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="w-3.5 h-3.5" />
-                              <span>ອັບໂຫລດປ່ຽນຮູບ Lao QR ໃໝ່</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
+                          <div className="w-24 h-24 bg-white border border-[#9333ea]/30 rounded-xl p-1.5 flex items-center justify-center shrink-0 shadow-xs relative overflow-hidden">
+                            {previewUrl ? (
+                              <img
+                                src={previewUrl}
+                                alt={item.title}
+                                className="w-full h-full object-contain"
+                              />
+                            ) : (
+                              <div className="text-center text-[10px] text-gray-400 font-bold px-1">
+                                <ImageIcon className="w-6 h-6 mx-auto mb-1 opacity-40" />
+                                ຍັງບໍ່ມີ QR
+                              </div>
+                            )}
+                            {isUploading && (
+                              <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center">
+                                <Loader2 className="w-5 h-5 text-amber-400 animate-spin" />
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex-1 space-y-1.5 min-w-0">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-black ${item.badgeCls}`}>
+                              {item.badge}
+                            </span>
+                            <h4 className="font-black text-sm text-[#240638] leading-snug">
+                              {item.title}
+                            </h4>
+                            <p className="text-xs text-[#644180]">{item.subtitle}</p>
+                            {rawUrl && (
+                              <p className="text-[10px] font-mono text-gray-400 truncate">
+                                {rawUrl}
+                              </p>
+                            )}
+
+                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                              <label className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs inline-flex items-center gap-1.5 transition shadow-xs cursor-pointer">
+                                {isUploading ? (
+                                  <>
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    <span>ກຳລັງອັບໂຫລດ...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload className="w-3.5 h-3.5" />
+                                    <span>ອັບໂຫລດຮູບ QR ({item.badge.split(" ")[0]})</span>
+                                  </>
+                                )}
+                                <input
+                                  type="file"
+                                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                                  className="hidden"
+                                  disabled={isUploading}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    e.target.value = "";
+                                    if (file) handleUploadCurrencyQr(item, file);
+                                  }}
+                                />
+                              </label>
+
+                              {settings[item.key] && (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    setSettings((prev) => ({ ...prev, [item.key]: "" }));
+                                    await callAdminApi("UPDATE_SETTINGS", { [item.key]: "" });
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs inline-flex items-center gap-1 cursor-pointer border border-rose-200"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>ລຶບ</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
 
                   <button

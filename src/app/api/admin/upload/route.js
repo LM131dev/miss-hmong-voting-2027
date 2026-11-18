@@ -18,7 +18,7 @@ export async function POST(req) {
     const formData = await req.formData();
     const file = formData.get("file");
     const rawFolder = String(formData.get("folder") || "contestants").trim().toLowerCase();
-    const safeFolder = ["contestants", "queens", "committee", "news", "sponsors", "qr", "general"].includes(rawFolder)
+    const safeFolder = ["contestants", "queens", "committee", "news", "sponsors", "qr", "qr_thb", "qr_usd", "general"].includes(rawFolder)
       ? rawFolder
       : "contestants";
 

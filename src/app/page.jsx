@@ -825,6 +825,10 @@ export default function HomePage() {
 
   const handleVoteSubmit = async () => {
     if (!votingContestant || !selectedPkg) return;
+    if (!slipPreview) {
+      alert("⚠️ ກະລຸນາອັບໂຫຼດຮູບໃບບິນໂອນເງິນ (Bank Slip) ກ່ອນກົດຢືນຢັນການໂຫວດ!");
+      return;
+    }
     setSubmittingVote(true);
     try {
       const res = await fetch("/api/vote", {
@@ -3482,43 +3486,111 @@ export default function HomePage() {
                     {/* 2-Column Grid: Left Bank & QR / Right Slip & Voter Info */}
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
                       {/* Left: Official Bank QR & Payment Info */}
-                      <div className="md:col-span-5 bg-gradient-to-b from-gray-50 to-[#faf6fd] rounded-2xl p-4 border border-gray-200 text-center space-y-3">
-                        {/* QR Display Card */}
-                        <div className="bg-white border-2 border-[#9333ea]/25 rounded-2xl p-4 shadow-xs flex flex-col items-center">
-                          <div className="text-[11px] font-black tracking-wider uppercase text-[#520d7a] mb-2 flex items-center gap-1.5">
-                            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                            <span>Lao QR Code (ສະແກນໄດ້ທຸກທະນາຄານ)</span>
-                          </div>
-                          <div className="w-52 h-52 bg-white border-2 border-[#9333ea]/30 rounded-2xl p-2.5 shadow-sm flex flex-col items-center justify-center relative overflow-hidden bg-gradient-to-b from-white to-[#faf5ff]">
-                            <img
-                              src="/official_lao_qr.png"
-                              alt="Official Lao QR Code"
-                              className="w-full h-full object-contain"
-                            />
-                          </div>
-                          <div className="mt-3 text-center">
-                            <div className="text-base font-black text-[#240638]">
-                              ຍອດໂອນ: {selectedPkg ? formatPrice(selectedPkg.price_lak) : ""}
+                      {(() => {
+                        const qrConfigs = {
+                          LAK: {
+                            title: "Lao QR Code (ສະແກນໄດ້ທຸກທະນາຄານ)",
+                            subtitle: "ຮອງຮັບ BCEL One, APB, LDB, JDB ແລະ ທຸກແອັບທະນາຄານ",
+                            url: settings.qr_lak_url || "/official_lao_qr.png",
+                          },
+                          THB: {
+                            title: "Thai Baht QR Code (ເງິນບາດ ฿)",
+                            subtitle: "ຮອງຮັບ PromptPay ແລະ ທຸກແອັບທະນາຄານໄທ",
+                            url: settings.qr_thb_url || "",
+                          },
+                          USD: {
+                            title: "USD QR Code (ເງິນໂດລາ $)",
+                            subtitle: "ສຳລັບຜູ້ໂຫວດທີ່ຊຳລະເປັນສະກຸນເງິນໂດລາ (USD)",
+                            url: settings.qr_usd_url || "",
+                          },
+                        };
+                        const activeQr = qrConfigs[currency] || qrConfigs.LAK;
+                        return (
+                          <div className="md:col-span-5 bg-gradient-to-b from-gray-50 to-[#faf6fd] rounded-2xl p-4 border border-gray-200 text-center space-y-3">
+                            {/* Currency QR Switcher */}
+                            <div className="grid grid-cols-3 gap-1 bg-white p-1 rounded-xl border border-gray-200">
+                              {[
+                                { code: "LAK", label: "₭ ກີບ (LAK)" },
+                                { code: "THB", label: "฿ ບາດ (THB)" },
+                                { code: "USD", label: "$ ໂດລາ (USD)" },
+                              ].map((cur) => (
+                                <button
+                                  key={cur.code}
+                                  type="button"
+                                  onClick={() => setCurrency(cur.code)}
+                                  className={`py-1.5 px-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                                    currency === cur.code
+                                      ? "bg-[#7e1db3] text-white shadow-xs"
+                                      : "text-gray-600 hover:text-black"
+                                  }`}
+                                >
+                                  {cur.label}
+                                </button>
+                              ))}
                             </div>
-                            <span className="text-[11px] text-[#644180] font-bold block mt-0.5">
-                              ຮອງຮັບ BCEL One, APB, LDB, JDB ແລະ ທຸກແອັບທະນາຄານ
-                            </span>
-                          </div>
-                        </div>
 
-                        {/* Transfer Note Info Card */}
-                        <div className="bg-[#fcfaff] rounded-xl p-3 border border-[#9333ea]/20 text-center text-xs space-y-1">
-                          <div className="text-[11px] text-[#644180] font-semibold">
-                            ໝາຍເຫດເນື້ອໃນການໂອນ:{" "}
-                            <span className="font-black logo-exact-bg text-white px-2 py-0.5 rounded text-xs ml-1">
-                              ໂຫວດ {votingContestant.code}
-                            </span>
+                            {/* QR Display Card */}
+                            <div className="bg-white border-2 border-[#9333ea]/25 rounded-2xl p-4 shadow-xs flex flex-col items-center">
+                              <div className="text-[11px] font-black tracking-wider uppercase text-[#520d7a] mb-2 flex items-center gap-1.5">
+                                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                                <span>{activeQr.title}</span>
+                              </div>
+                              <div className="w-52 h-52 bg-white border-2 border-[#9333ea]/30 rounded-2xl p-2.5 shadow-sm flex flex-col items-center justify-center relative overflow-hidden bg-gradient-to-b from-white to-[#faf5ff]">
+                                {activeQr.url ? (
+                                  <img
+                                    src={activeQr.url}
+                                    alt={activeQr.title}
+                                    className="w-full h-full object-contain"
+                                  />
+                                ) : (
+                                  <div className="text-center p-3 space-y-2">
+                                    <p className="text-xs font-bold text-gray-500">
+                                      ຍັງບໍ່ໄດ້ອັບໂຫຼດ QR ສຳລັບ {currency}
+                                    </p>
+                                    <button
+                                      type="button"
+                                      onClick={() => setCurrency("LAK")}
+                                      className="px-3 py-1 rounded-lg bg-[#7e1db3] text-white text-[11px] font-bold cursor-pointer"
+                                    >
+                                      ໃຊ້ Lao QR (LAK)
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="mt-3 text-center">
+                                <div className="text-base font-black text-[#240638]">
+                                  ຍອດໂອນ: {selectedPkg ? formatPrice(selectedPkg.price_lak) : ""}
+                                </div>
+                                <span className="text-[11px] text-[#644180] font-bold block mt-0.5">
+                                  {activeQr.subtitle}
+                                </span>
+                                {activeQr.url && (
+                                  <a
+                                    href={activeQr.url}
+                                    download={`qr-${currency.toLowerCase()}.png`}
+                                    className="inline-flex items-center gap-1 text-[11px] text-[#7e1db3] hover:text-[#520d7a] font-bold underline mt-1.5"
+                                  >
+                                    💾 ບັນທຶກຮູບ QR ({currency})
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Transfer Note Info Card */}
+                            <div className="bg-[#fcfaff] rounded-xl p-3 border border-[#9333ea]/20 text-center text-xs space-y-1">
+                              <div className="text-[11px] text-[#644180] font-semibold">
+                                ໝາຍເຫດເນື້ອໃນການໂອນ:{" "}
+                                <span className="font-black logo-exact-bg text-white px-2 py-0.5 rounded text-xs ml-1">
+                                  ໂຫວດ {votingContestant.code}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-gray-500">
+                                (ບັນທຶກຮູບ QR ຫຼື ສະແກນຜ່ານແອັບທະນາຄານຂອງທ່ານເພື່ອຊຳລະເງິນ)
+                              </p>
+                            </div>
                           </div>
-                          <p className="text-[10px] text-gray-500">
-                            (ບັນທຶກຮູບ QR ຫຼື ສະແກນຜ່ານແອັບທະນາຄານຂອງທ່ານເພື່ອຊຳລະເງິນ)
-                          </p>
-                        </div>
-                      </div>
+                        );
+                      })()}
 
                       {/* Right: Slip Upload & Supporter Form */}
                       <div className="md:col-span-7 space-y-3.5">
@@ -3654,12 +3726,23 @@ export default function HomePage() {
                         <div className="pt-2 space-y-2">
                           <button
                             type="button"
-                            disabled={submittingVote}
+                            disabled={submittingVote || !slipPreview}
                             onClick={handleVoteSubmit}
-                            className="w-full py-3.5 px-5 rounded-xl font-black text-sm flex items-center justify-center gap-2 btn-garden-vote shadow-md cursor-pointer transition"
+                            className={`w-full py-3.5 px-5 rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-md transition ${
+                              submittingVote || !slipPreview
+                                ? "bg-gray-200 text-gray-500 cursor-not-allowed border border-gray-300 shadow-none"
+                                : "btn-garden-vote cursor-pointer"
+                            }`}
                           >
                             {submittingVote ? (
                               <span>ກຳລັງສົ່ງໃບບິນໂຫວດ...</span>
+                            ) : !slipPreview ? (
+                              <>
+                                <Upload className="w-4 h-4" />
+                                <span>
+                                  ກະລຸນາອັບໂຫຼດຮູບໃບບິນໂອນເງິນກ່ອນ (ຈຳເປັນ)
+                                </span>
+                              </>
                             ) : (
                               <>
                                 <CheckCircle2 className="w-4 h-4" />
