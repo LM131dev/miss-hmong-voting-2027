@@ -47,7 +47,7 @@ export default function AdminDashboardPage() {
   const [authChecking, setAuthChecking] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminUser, setAdminUser] = useState(null);
-  const [loginUser, setLoginUser] = useState("admin");
+  const [loginUser, setLoginUser] = useState("");
   const [loginPass, setLoginPass] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
@@ -370,22 +370,6 @@ export default function AdminDashboardPage() {
               )}
             </button>
           </form>
-
-          {/* Credentials Info Box */}
-          <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-[11px] text-[#78350f] space-y-1">
-            <div className="font-black flex items-center gap-1.5 text-amber-800">
-              <Crown className="w-3.5 h-3.5 text-amber-600" />
-              <span>ລະຫັດຜ່ານເລີ່ມຕົ້ນຂອງລະບົບ (Default):</span>
-            </div>
-            <div>
-              ຊື່ຜູ້ໃຊ້: <code className="bg-amber-100/80 px-1.5 py-0.5 rounded font-mono font-bold">admin</code>
-              {" • "}
-              ລະຫັດຜ່ານ: <code className="bg-amber-100/80 px-1.5 py-0.5 rounded font-mono font-bold">mhvt2027</code>
-            </div>
-            <p className="text-[10px] text-zinc-500 pt-0.5">
-              (ທ່ານສາມາດປ່ຽນລະຫັດຜ່ານໃໝ່ໄດ້ຕະຫຼອດເວລາຢູ່ແທັບ "10. ຕັ້ງຄ່າລະບົບ" ຫຼັງຈາກເຂົ້າສູ່ລະບົບແລ້ວ)
-            </p>
-          </div>
 
           <div className="text-center pt-1">
             <Link
