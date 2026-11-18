@@ -574,12 +574,9 @@ export default function HomePage() {
       if (data.transactions) {
         setTransactions(data.transactions || []);
       }
-        setSettings(data.settings || {});
-        setTotalVotes(data.stats?.total_votes || 0);
-        if (data.packages?.length > 0 && !selectedPkg) {
-          setSelectedPkg(data.packages[2] || data.packages[1] || data.packages[0]);
-        }
-        if (data.committee && data.committee.length > 0) {
+      setSettings(data.settings || {});
+      setTotalVotes(data.stats?.total_votes || 0);
+      if (data.committee && data.committee.length > 0) {
           setCommitteeList(data.committee);
         }
         if (data.tickets && data.tickets.length > 0) {
@@ -1577,26 +1574,36 @@ export default function HomePage() {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
               {packages.map((pkg, idx) => {
+                const isSelected = selectedPkg?.id === pkg.id;
                 const isPopular = pkg.points === 20;
                 const isTopVip = pkg.points >= 1100;
                 return (
-                  <div
+                  <button
                     key={pkg.id || idx}
-                    className={`relative rounded-2xl p-4 flex flex-col justify-between text-center border select-none ${
-                      isPopular
-                        ? "bg-[#faf5ff] border-[#c084fc]"
+                    type="button"
+                    onClick={() => {
+                      setSelectedPkg(pkg);
+                      const el = document.getElementById("contestants");
+                      if (el) el.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    title={`ຄລິກເພື່ອເລືອກແພັກເກັດ ${pkg.points} Votes (${formatPrice(pkg.price_lak)})`}
+                    className={`relative rounded-2xl p-4 flex flex-col justify-between text-center border transition-all duration-200 cursor-pointer hover:-translate-y-1 hover:shadow-lg ${
+                      isSelected
+                        ? "bg-[#faf5ff] border-2 border-[#7e1db3] ring-2 ring-[#7e1db3]/25 shadow-md"
+                        : isPopular
+                        ? "bg-[#faf5ff] border-[#c084fc] hover:border-[#7e1db3]"
                         : isTopVip
-                        ? "bg-amber-50/40 border-amber-300"
-                        : "bg-white border-gray-200"
+                        ? "bg-amber-50/40 border-amber-300 hover:border-amber-400"
+                        : "bg-white border-gray-200 hover:border-[#a855f7]"
                     }`}
                   >
                     {isPopular && (
-                      <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-[#7e1db3] text-white text-[9px] font-bold">
+                      <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-[#7e1db3] text-white text-[9px] font-bold shadow-xs">
                         ຍອດນິຍົມ
                       </span>
                     )}
                     {isTopVip && (
-                      <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-amber-400 text-[#240638] text-[9px] font-bold">
+                      <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-amber-400 text-[#240638] text-[9px] font-bold shadow-xs">
                         VIP
                       </span>
                     )}
@@ -1613,7 +1620,7 @@ export default function HomePage() {
                         {formatPrice(pkg.price_lak)}
                       </div>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -3343,24 +3350,33 @@ export default function HomePage() {
                       {packages.map((pkg, idx) => {
                         const isSelected = selectedPkg?.id === pkg.id;
                         const isPopular = pkg.points === 20;
-                        const isVip = pkg.points === 2500 || pkg.points === 1000;
+                        const isVip = pkg.points === 2500 || pkg.points === 1100;
                         return (
                           <button
                             key={pkg.id || idx}
                             type="button"
                             onClick={() => setSelectedPkg(pkg)}
+                            onDoubleClick={() => {
+                              setSelectedPkg(pkg);
+                              setVoteStep(2);
+                            }}
                             className={`relative p-3.5 rounded-2xl border text-center transition cursor-pointer flex flex-col justify-between ${
                               isSelected
-                                ? "bg-[#f5edfc] border-2 border-[#7e1db3] shadow-md ring-2 ring-[#7e1db3]/20"
+                                ? "bg-[#f5edfc] border-2 border-[#7e1db3] shadow-md ring-2 ring-[#7e1db3]/30 scale-[1.02]"
                                 : "bg-white border-gray-200 hover:border-[#a855f7] hover:bg-gray-50/50"
                             }`}
                           >
-                            {isPopular && (
+                            {isSelected && (
+                              <span className="absolute -top-2 right-2 px-1.5 py-0.5 rounded-full bg-emerald-600 text-white text-[9px] font-black shadow">
+                                ✓ ເລືອກແລ້ວ
+                              </span>
+                            )}
+                            {isPopular && !isSelected && (
                               <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-[#7e1db3] text-white text-[9px] font-black uppercase tracking-wider shadow">
                                 ຍອດນິຍົມ
                               </span>
                             )}
-                            {isVip && (
+                            {isVip && !isSelected && (
                               <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-amber-400 text-[#240638] text-[9px] font-black uppercase tracking-wider shadow">
                                 VIP
                               </span>
@@ -3406,19 +3422,33 @@ export default function HomePage() {
                 ) : (
                   /* ==================== STEP 2: BANK TRANSFER & SLIP UPLOAD ==================== */
                   <div className="space-y-4">
-                    {/* Back to Step 1 Bar */}
-                    <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                    {/* Back to Step 1 Bar & Quick Package Switcher */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-gray-100">
                       <button
                         type="button"
                         onClick={() => setVoteStep(1)}
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#6b1699] hover:text-[#520d7a] cursor-pointer"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#6b1699] hover:text-[#520d7a] cursor-pointer bg-[#f5edfc] hover:bg-[#ede0fa] px-3 py-1.5 rounded-xl border border-[#9333ea]/20 transition"
                       >
                         <ArrowLeft className="w-4 h-4" />
-                        <span>ປ່ຽນແພັກເກັດໂຫວດ</span>
+                        <span>ປ່ຽນແພັກເກັດ</span>
                       </button>
-                      <div className="px-3 py-1 rounded-full bg-[#f3ebfa] text-[#520d7a] font-black text-xs border border-[#9333ea]/20">
-                        +{selectedPkg?.points.toLocaleString()} Votes •{" "}
-                        {selectedPkg ? formatPrice(selectedPkg.price_lak) : ""}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-[#644180] hidden sm:inline">ແພັກເກັດ:</span>
+                        <select
+                          value={selectedPkg?.id || ""}
+                          onChange={(e) => {
+                            const pId = Number(e.target.value);
+                            const found = packages.find((p) => p.id === pId);
+                            if (found) setSelectedPkg(found);
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-[#f3ebfa] text-[#520d7a] font-black text-xs border border-[#9333ea]/30 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#9333ea]/40"
+                        >
+                          {packages.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              +{p.points.toLocaleString()} Votes • {formatPrice(p.price_lak)}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </div>
 
