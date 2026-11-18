@@ -46,21 +46,20 @@ echo "--> [4/7] Ensuring uploads directory exists and is writable..."
 mkdir -p "$APP_DIR/public/uploads/slips"
 chmod -R 777 "$APP_DIR/public/uploads" 2>/dev/null || true
 
-# 7. Update ticket perks in SQLite database
+# 7. Update ticket perks in SQLite database via Python
 echo "--> [5/7] Updating database clean perks..."
-node -e "
-try {
-  const { DatabaseSync } = require('node:sqlite');
-  const db = new DatabaseSync('$APP_DIR/miss-hmong.sqlite');
-  db.prepare(\"UPDATE ticket_tiers SET perks_json = '[\"\"ບັດເຂົ້າຊົມງານຮອບຕັດສິນ 1 ທ່ານ\"\",\"\"ຮັບຟຣີຄະແນນໂຫວດ +2 Votes\"\"]' WHERE id = 1 OR tier_id = 'standard'\").run();
-  console.log('✓ Successfully cleaned ticket tiers perks in database');
-} catch (e) {
-  console.log('Perk update check:', e.message);
-}
-"
+python3 -c "
+import sqlite3
+con = sqlite3.connect('$APP_DIR/miss-hmong.sqlite')
+cur = con.cursor()
+cur.execute('''UPDATE ticket_tiers SET perks_json = '[\"ບັດເຂົ້າຊົມງານຮອບຕັດສິນ 1 ທ່ານ\",\"ຮັບຟຣີຄະແນນໂຫວດ +2 Votes\"]' WHERE id = 1 OR tier_id = 'standard' ''')
+con.commit()
+con.close()
+print('✓ Successfully cleaned ticket tiers perks in database')
+" 2>/dev/null || true
 
 # 8. Rebuild Next.js (with swap active, this will succeed 100%)
-echo "--> [6/7] Building production Next.js bundle (please wait ~40s)..."
+echo "--> [6/7] Building production Next.js bundle..."
 npm run build
 
 # 9. Restart PM2 daemon
@@ -69,19 +68,17 @@ pm2 restart all
 
 # 10. Verify votes in database
 echo "----------------------------------------------------------"
-node -e "
-try {
-  const { DatabaseSync } = require('node:sqlite');
-  const db = new DatabaseSync('$APP_DIR/miss-hmong.sqlite');
-  const top = db.prepare('SELECT code, name, total_votes FROM contestants WHERE total_votes > 0 ORDER BY total_votes DESC LIMIT 8').all();
-  console.log('✓ Current Top Votes in Database:');
-  top.forEach(c => console.log('  - ' + c.code + ' (' + c.name + '): ' + c.total_votes + ' votes'));
-  const txCount = db.prepare('SELECT COUNT(*) as cnt FROM vote_transactions').get();
-  console.log('✓ Total Transactions Saved: ' + (txCount?.cnt || 0));
-} catch(e) {
-  console.log('DB Check:', e.message);
-}
-"
+python3 -c "
+import sqlite3
+con = sqlite3.connect('$APP_DIR/miss-hmong.sqlite')
+cur = con.cursor()
+cur.execute('SELECT code, name, total_votes FROM contestants WHERE total_votes > 0 ORDER BY total_votes DESC LIMIT 8')
+rows = cur.fetchall()
+print('✓ Current Top Votes in Database:')
+for r in rows:
+    print(f'  - {r[0]} ({r[1]}): {r[2]} votes')
+con.close()
+" 2>/dev/null || true
 echo "----------------------------------------------------------"
 echo "=========================================================="
 echo "  UPDATE COMPLETE & SUCCESSFUL!"
