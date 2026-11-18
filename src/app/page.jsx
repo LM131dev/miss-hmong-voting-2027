@@ -3482,127 +3482,42 @@ export default function HomePage() {
 
                     {/* 2-Column Grid: Left Bank & QR / Right Slip & Voter Info */}
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
-                      {/* Left: Official Bank QR & Account Details */}
+                      {/* Left: Official Bank QR & Payment Info */}
                       <div className="md:col-span-5 bg-gradient-to-b from-gray-50 to-[#faf6fd] rounded-2xl p-4 border border-gray-200 text-center space-y-3">
-                        {/* Bank Tab Switcher */}
-                        <div className="grid grid-cols-2 gap-1 bg-white p-1 rounded-xl border border-gray-200">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPaymentMethod("BCEL");
-                              setPaymentRef(
-                                `BCEL-${Math.floor(100000 + Math.random() * 900000)}`
-                              );
-                            }}
-                            className={`py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                              paymentMethod === "BCEL"
-                                ? "bg-red-600 text-white shadow-xs"
-                                : "text-gray-600 hover:text-black"
-                            }`}
-                          >
-                            BCEL OnePay
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPaymentMethod("LAPNET");
-                              setPaymentRef(
-                                `APB-${Math.floor(100000 + Math.random() * 900000)}`
-                              );
-                            }}
-                            className={`py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                              paymentMethod === "LAPNET"
-                                ? "bg-[#520d7a] text-white shadow-xs"
-                                : "text-gray-600 hover:text-black"
-                            }`}
-                          >
-                            APB / LAPNet
-                          </button>
-                        </div>
-
                         {/* QR Display Card */}
-                        <div className="bg-white border-2 border-[#9333ea]/25 rounded-2xl p-3 shadow-xs flex flex-col items-center">
-                          <div className="text-[10px] font-black tracking-wider uppercase text-gray-500 mb-1">
-                            {paymentMethod === "BCEL"
-                              ? "BCEL OnePay Lao QR"
-                              : "APB LAPNet Lao QR"}
+                        <div className="bg-white border-2 border-[#9333ea]/25 rounded-2xl p-4 shadow-xs flex flex-col items-center">
+                          <div className="text-[11px] font-black tracking-wider uppercase text-[#520d7a] mb-2 flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                            <span>Lao QR Code (ສະແກນໄດ້ທຸກທະນາຄານ)</span>
                           </div>
-                          <div className="w-44 h-44 bg-white border-2 border-[#9333ea]/30 rounded-2xl p-2 shadow-xs flex flex-col items-center justify-center relative overflow-hidden bg-gradient-to-b from-white to-[#faf5ff]">
+                          <div className="w-52 h-52 bg-white border-2 border-[#9333ea]/30 rounded-2xl p-2.5 shadow-sm flex flex-col items-center justify-center relative overflow-hidden bg-gradient-to-b from-white to-[#faf5ff]">
                             <img
                               src="/official_lao_qr.png"
                               alt="Official Lao QR Code"
                               className="w-full h-full object-contain"
                             />
                           </div>
-                          <div className="mt-2 text-center">
-                            <div className="text-sm font-black text-[#240638]">
+                          <div className="mt-3 text-center">
+                            <div className="text-base font-black text-[#240638]">
                               ຍອດໂອນ: {selectedPkg ? formatPrice(selectedPkg.price_lak) : ""}
                             </div>
-                            <span className="text-[10px] text-[#644180] font-bold block mt-0.5">
-                              ສະແກນໄດ້ທຸກແອັບທະນາຄານໃນລາວ (Lao QR)
+                            <span className="text-[11px] text-[#644180] font-bold block mt-0.5">
+                              ຮອງຮັບ BCEL One, APB, LDB, JDB ແລະ ທຸກແອັບທະນາຄານ
                             </span>
                           </div>
                         </div>
 
-                        {/* Account Name & Number with Copy Button */}
-                        <div className="bg-white rounded-xl p-3 border border-gray-200 text-left text-xs space-y-1.5">
-                          <div>
-                            <span className="text-[10px] text-gray-500 block">
-                              ຊື່ບັນຊີ (Account Name):
-                            </span>
-                            <span className="font-extrabold text-[#240638] text-[11px] leading-tight block">
-                              ໂຄງການ ສວນບັນດາເຜົ່າ & ຮ້ານຄຳພູວົງ
-                            </span>
-                            <span className="text-[10px] text-gray-400 font-mono block">
-                              LAO ETHNIC GARDEN / PHOUVONG JEWELRY
-                            </span>
-                          </div>
-                          <div className="pt-1 border-t border-gray-100 flex items-center justify-between gap-1">
-                            <div>
-                              <span className="text-[10px] text-gray-500 block">
-                                ເລກບັນຊີ (Acc No.):
-                              </span>
-                              <span className="font-mono font-black text-[#520d7a] text-xs">
-                                {paymentMethod === "BCEL"
-                                  ? "160-12-00-01234567-001"
-                                  : "010-11-00-07654321-001"}
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleCopyBank(
-                                  paymentMethod === "BCEL"
-                                    ? "160120001234567001"
-                                    : "010110007654321001"
-                                )
-                              }
-                              className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1 transition cursor-pointer ${
-                                copiedBank
-                                  ? "bg-emerald-600 text-white shadow-xs"
-                                  : "bg-[#f3ebfa] hover:bg-[#e9d5ff] text-[#520d7a]"
-                              }`}
-                              title="ຄັດລອກເລກບັນຊີ"
-                            >
-                              {copiedBank ? (
-                                <>
-                                  <Check className="w-3.5 h-3.5" />
-                                  <span>ຄັດລອກແລ້ວ!</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="w-3.5 h-3.5" />
-                                  <span>ຄັດລອກ</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-                          <div className="text-[10px] text-[#644180] pt-1">
-                            ໝາຍເຫດໂອນ:{" "}
-                            <strong className="text-[#240638]">
+                        {/* Transfer Note Info Card */}
+                        <div className="bg-[#fcfaff] rounded-xl p-3 border border-[#9333ea]/20 text-center text-xs space-y-1">
+                          <div className="text-[11px] text-[#644180] font-semibold">
+                            ໝາຍເຫດເນື້ອໃນການໂອນ:{" "}
+                            <span className="font-black logo-exact-bg text-white px-2 py-0.5 rounded text-xs ml-1">
                               ໂຫວດ {votingContestant.code}
-                            </strong>
+                            </span>
                           </div>
+                          <p className="text-[10px] text-gray-500">
+                            (ບັນທຶກຮູບ QR ຫຼື ສະແກນຜ່ານແອັບທະນາຄານຂອງທ່ານເພື່ອຊຳລະເງິນ)
+                          </p>
                         </div>
                       </div>
 
