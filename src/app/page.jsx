@@ -462,7 +462,7 @@ export default function HomePage() {
 
   const [detailContestant, setDetailContestant] = useState(null);
   const [committeeList, setCommitteeList] = useState(INITIAL_COMMITTEE);
-  const [ticketList, setTicketList] = useState(TICKET_TIERS);
+  const [ticketList, setTicketList] = useState([]);
   const [scheduleList, setScheduleList] = useState(SCHEDULE_ITEMS);
   const [newsList, setNewsList] = useState(NEWS_ITEMS);
   const [selectedNewsDetail, setSelectedNewsDetail] = useState(null);
@@ -575,38 +575,38 @@ export default function HomePage() {
       }
       setSettings(data.settings || {});
       setTotalVotes(data.stats?.total_votes || 0);
-      if (data.committee && data.committee.length > 0) {
-          setCommitteeList(data.committee);
-        }
-        if (data.tickets && data.tickets.length > 0) {
-          setTicketList(
-            data.tickets.map((t) => ({
-              ...t,
-              id: t.tier_id || String(t.id),
-              perks:
-                typeof t.perks_json === "string"
-                  ? JSON.parse(t.perks_json || "[]")
-                  : t.perks || [],
-            }))
-          );
-        }
-        if (data.schedule && data.schedule.length > 0) {
-          setScheduleList(data.schedule);
-        }
-        if (data.news && data.news.length > 0) {
-          setNewsList(
-            data.news.map((n) => ({
-              ...n,
-              images:
-                typeof n.images_json === "string"
-                  ? JSON.parse(n.images_json || "[]")
-                  : n.images || [],
-            }))
-          );
-        }
-        if (data.sponsors && data.sponsors.length > 0) {
-          setSponsorsRaw(data.sponsors);
-        }
+      if (Array.isArray(data.committee)) {
+        setCommitteeList(data.committee);
+      }
+      if (Array.isArray(data.tickets)) {
+        setTicketList(
+          data.tickets.map((t) => ({
+            ...t,
+            id: t.tier_id || String(t.id),
+            perks:
+              typeof t.perks_json === "string"
+                ? JSON.parse(t.perks_json || "[]")
+                : t.perks || [],
+          }))
+        );
+      }
+      if (Array.isArray(data.schedule)) {
+        setScheduleList(data.schedule);
+      }
+      if (Array.isArray(data.news)) {
+        setNewsList(
+          data.news.map((n) => ({
+            ...n,
+            images:
+              typeof n.images_json === "string"
+                ? JSON.parse(n.images_json || "[]")
+                : n.images || [],
+          }))
+        );
+      }
+      if (Array.isArray(data.sponsors)) {
+        setSponsorsRaw(data.sponsors);
+      }
     } catch (err) {
       console.error("Failed to load voting state:", err);
     } finally {
@@ -880,7 +880,9 @@ export default function HomePage() {
     { href: "#contestants", label: lang === "LA" ? "ຜູ້ເຂົ້າປະກວດ" : "Contestants", icon: Crown },
     { href: "#past-queens", label: lang === "LA" ? "ອະດີດນາງສາວ" : "Hall of Fame", icon: Award },
     { href: "#committee", label: lang === "LA" ? "ຄະນະກຳມະການ" : "Committee", icon: Users },
-    { href: "#tickets", label: lang === "LA" ? "ປີ້ເຂົ້າຊົມ" : "Tickets", icon: Ticket },
+    ...(ticketList.length > 0
+      ? [{ href: "#tickets", label: lang === "LA" ? "ປີ້ເຂົ້າຊົມ" : "Tickets", icon: Ticket }]
+      : []),
     { href: "#schedule", label: lang === "LA" ? "ຕາຕະລາງ" : "Schedule", icon: Calendar },
     { href: "#news", label: lang === "LA" ? "ຂ່າວສານ" : "News", icon: Newspaper },
     { href: "#sponsors", label: lang === "LA" ? "ຜູ້ສະໜັບສະໜູນ" : "Sponsors", icon: Handshake },
@@ -2069,7 +2071,8 @@ export default function HomePage() {
       </section>
 
       {/* SECTION 4: TICKETS */}
-      <section id="tickets" className="max-w-7xl mx-auto px-4 sm:px-6 py-10 w-full">
+      {ticketList.length > 0 && (
+        <section id="tickets" className="max-w-7xl mx-auto px-4 sm:px-6 py-10 w-full">
         <div className="rounded-[36px] garden-luxury-dark text-white p-6 sm:p-10 shadow-2xl">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
             <div>
@@ -2160,7 +2163,8 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-      </section>
+        </section>
+      )}
 
       {/* SECTION 5: SCHEDULE */}
       <section id="schedule" className="max-w-7xl mx-auto px-4 sm:px-6 py-10 w-full">

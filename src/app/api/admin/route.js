@@ -393,6 +393,7 @@ export async function POST(req) {
     if (action === "DELETE_TICKET") {
       const tId = Number(payload.id);
       db.prepare("DELETE FROM ticket_tiers WHERE id = ?").run(tId);
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('frontend_seeded', '1')").run();
       return NextResponse.json({ success: true, message: "ລຶບປະເພດປີ້ເຂົ້າຊົມແລ້ວ" });
     }
 

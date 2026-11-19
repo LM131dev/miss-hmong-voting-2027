@@ -677,6 +677,9 @@ function seedInitialData(db) {
 }
 
 function seedFrontendSections(db) {
+  const seededRow = db.prepare("SELECT value FROM settings WHERE key = 'frontend_seeded'").get();
+  const alreadySeeded = seededRow?.value === "1";
+
   // Settings defaults
   const insertSetting = db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)");
   insertSetting.run("venue_name", "ສວນບັນດາເຜົ່າ / Lao Ethnic Garden (ສວນພຶກສາ • PHEUKSA)");
@@ -692,7 +695,7 @@ function seedFrontendSections(db) {
 
   // Committee
   const comCount = db.prepare("SELECT COUNT(*) as count FROM committee").get();
-  if (!comCount || comCount.count === 0) {
+  if (!alreadySeeded && (!comCount || comCount.count === 0)) {
     const insertCom = db.prepare(`
       INSERT INTO committee (order_no, badge, name, role, sub_role, quote, image, featured)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -751,7 +754,7 @@ function seedFrontendSections(db) {
 
   // Tickets
   const tickCount = db.prepare("SELECT COUNT(*) as count FROM ticket_tiers").get();
-  if (!tickCount || tickCount.count === 0) {
+  if (!alreadySeeded && (!tickCount || tickCount.count === 0)) {
     const insertTick = db.prepare(`
       INSERT INTO ticket_tiers (tier_id, name, name_lao, price_lak, bonus_votes, zone, perks_json, badge, popular, order_no)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -808,7 +811,7 @@ function seedFrontendSections(db) {
 
   // Schedule
   const schedCount = db.prepare("SELECT COUNT(*) as count FROM schedule_items").get();
-  if (!schedCount || schedCount.count === 0) {
+  if (!alreadySeeded && (!schedCount || schedCount.count === 0)) {
     const insertSched = db.prepare(`
       INSERT INTO schedule_items (order_no, date, time, title, location, status, is_live, is_done, is_finale)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -861,7 +864,7 @@ function seedFrontendSections(db) {
 
   // News
   const newsCount = db.prepare("SELECT COUNT(*) as count FROM news_items").get();
-  if (!newsCount || newsCount.count === 0) {
+  if (!alreadySeeded && (!newsCount || newsCount.count === 0)) {
     const insertNews = db.prepare(`
       INSERT INTO news_items (order_no, title, date, category, summary, content, images_json, type)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -917,7 +920,7 @@ function seedFrontendSections(db) {
 
   // Past Queens (Hall of Fame)
   const queenCount = db.prepare("SELECT COUNT(*) as count FROM past_queens").get();
-  if (!queenCount || queenCount.count === 0) {
+  if (!alreadySeeded && (!queenCount || queenCount.count === 0)) {
     const insertQueen = db.prepare(`
       INSERT INTO past_queens (year, name, title, image_url, bio, badge, order_no)
       VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -994,7 +997,7 @@ function seedFrontendSections(db) {
 
   // Sponsors
   const sponCount = db.prepare("SELECT COUNT(*) as count FROM sponsors").get();
-  if (!sponCount || sponCount.count === 0) {
+  if (!alreadySeeded && (!sponCount || sponCount.count === 0)) {
     const insertSpon = db.prepare(`
       INSERT INTO sponsors (tier, name, role, order_no)
       VALUES (?, ?, ?, ?)
@@ -1014,4 +1017,6 @@ function seedFrontendSections(db) {
     insertSpon.run("GOLD", "ທີມຊ່າງແຕ່ງໜ້າ-ເຮັດຜົມ ມືອາຊີບ", "Stylist & Beauty Team", 11);
     insertSpon.run("GOLD", "ຮ້ານອາຫານ ສວນບັນດາເຜົ່າ", "ອາຫານ & ເຄື່ອງດື່ມຕ້ອນຮັບ", 12);
   }
+
+  insertSetting.run("frontend_seeded", "1");
 }
