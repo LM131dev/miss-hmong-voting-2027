@@ -52,8 +52,8 @@ echo "--> [4/7] Ensuring uploads directory exists and is writable..."
 mkdir -p "$APP_DIR/public/uploads/slips"
 chmod -R 777 "$APP_DIR/public/uploads" 2>/dev/null || true
 
-# 7. Update ticket perks & remove package discounts (strictly 10,000 LAK/vote) in SQLite database via Python
-echo "--> [5/7] Updating database perks & flat vote package rates (10,000 LAK/vote)..."
+# 7. Sync ticket perks & restore discounted vote packages in SQLite database via Python
+echo "--> [5/7] Updating database perks & vote packages..."
 python3 - << 'PYEOF' || true
 import sqlite3, json
 con = sqlite3.connect('/var/www/miss-hmong-voting/miss-hmong.sqlite')
@@ -62,13 +62,13 @@ perks = json.dumps(["ບັດເຂົ້າຊົມງານຮອບຕັ�
 cur.execute("UPDATE ticket_tiers SET perks_json = ? WHERE id = 1 OR tier_id = 'standard'", (perks,))
 packages = [
     (1, "Single Vote (1 Vote)", 1, 10000, "ເລີ່ມຕົ້ນ"),
-    (2, "Popular Pack (5 Votes)", 5, 50000, "ນິຍົມ"),
-    (3, "Mega Pack (20 Votes)", 20, 200000, "ຂາຍດີສຸດ"),
-    (4, "VIP Pack (50 Votes)", 50, 500000, "VIP"),
-    (5, "Super Crown (100 Votes)", 100, 1000000, "Super VIP"),
-    (6, "Diamond Pack (200 Votes)", 200, 2000000, "Diamond"),
-    (7, "Crown Ambassador (500 Votes)", 500, 5000000, "Crown VIP"),
-    (8, "Royal Grand Sponsor (1,000 Votes)", 1000, 10000000, "Royal VIP"),
+    (2, "Popular Pack (5 Votes)", 5, 40000, "ປະຢັດ 20%"),
+    (3, "Mega Pack (20 Votes)", 20, 150000, "ຂາຍດີສຸດ"),
+    (4, "VIP Pack (50 Votes)", 50, 350000, "ປະຢັດ 30%"),
+    (5, "Super Crown (100 Votes)", 100, 600000, "Super VIP"),
+    (6, "Diamond Pack (200 Votes)", 200, 1000000, "Diamond"),
+    (7, "Crown Ambassador (1,100 Votes)", 1100, 5000000, "Crown VIP"),
+    (8, "Royal Grand Sponsor (2,500 Votes)", 2500, 10000000, "Royal VIP"),
 ]
 for pid, name, pts, price, badge in packages:
     cur.execute(
@@ -77,7 +77,7 @@ for pid, name, pts, price, badge in packages:
     )
 con.commit()
 con.close()
-print('✓ Successfully cleaned ticket perks & updated vote_packages (1 Vote = 10,000 LAK flat)')
+print('✓ Successfully updated vote_packages back to original rates')
 PYEOF
 
 # 8. Rebuild Next.js (with swap active, this will succeed and generate new cache-busting JS hashes)
