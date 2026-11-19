@@ -98,6 +98,27 @@ export async function POST(req) {
 
     const db = getDb();
 
+    if (action === "GET_REPORT_DATA") {
+      const allTransactions = db
+        .prepare(`
+          SELECT
+            t.*,
+            c.code as contestant_code,
+            c.name as contestant_name,
+            p.name as package_name
+          FROM vote_transactions t
+          LEFT JOIN contestants c ON t.contestant_id = c.id
+          LEFT JOIN vote_packages p ON t.package_id = p.id
+          ORDER BY t.id DESC
+        `)
+        .all();
+      return NextResponse.json({
+        success: true,
+        transactions: allTransactions,
+        generated_at: new Date().toISOString(),
+      });
+    }
+
     if (action === "APPROVE_TX") {
       const txId = Number(payload.id);
       const tx = db

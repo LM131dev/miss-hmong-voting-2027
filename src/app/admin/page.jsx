@@ -43,6 +43,11 @@ import {
   Upload,
   Loader2,
   Camera,
+  FileText,
+  Download,
+  Printer,
+  AlertTriangle,
+  BarChart3,
 } from "lucide-react";
 
 // Reusable Direct Image Upload Field for Backoffice
@@ -283,6 +288,9 @@ export default function AdminDashboardPage() {
   // 10 Tabs: tx, contestants, committee, packages, tickets, schedule, news, sponsors, venue, settings
   const [activeTab, setActiveTab] = useState("tx");
   const [txFilter, setTxFilter] = useState("ALL");
+  const [reportFilter, setReportFilter] = useState("ALL");
+  const [reportTransactions, setReportTransactions] = useState(null);
+  const [reportLoading, setReportLoading] = useState(false);
   const [contestantSearch, setContestantSearch] = useState("");
   const [sponsorFilter, setSponsorFilter] = useState("ALL");
 
@@ -499,6 +507,47 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const loadFullReport = async () => {
+    setReportLoading(true);
+    try {
+      const res = await fetch("/api/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "GET_REPORT_DATA" }),
+      });
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.transactions)) {
+        setReportTransactions(data.transactions);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const exportCsvFile = (filename, headers, rows) => {
+    const escapeCell = (val) => {
+      const s = String(val ?? "").replace(/"/g, '""');
+      return `"${s}"`;
+    };
+    const csvLines = [
+      headers.map(escapeCell).join(","),
+      ...rows.map((r) => r.map(escapeCell).join(",")),
+    ];
+    const blob = new Blob(["\uFEFF" + csvLines.join("\r\n")], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   useEffect(() => {
     checkAuth();
   }, []);
@@ -522,6 +571,7 @@ export default function AdminDashboardPage() {
       }
       showNotice(data.message || "ດຳເນີນການສຳເລັດ");
       await loadData();
+      if (reportTransactions !== null) await loadFullReport();
       return true;
     } catch {
       alert("ບໍ່ສາມາດເຊື່ອມຕໍ່ Server ໄດ້");
@@ -689,6 +739,13 @@ export default function AdminDashboardPage() {
           icon: Receipt,
         },
         {
+          id: "report",
+          label: "ລາຍງານສະຫຼຸບ & ກວດສອບ",
+          badge: "Audit",
+          badgeColor: "bg-emerald-400 text-[#1f0330]",
+          icon: BarChart3,
+        },
+        {
           id: "contestants",
           label: "2. ຜູ້ເຂົ້າປະກວດ (HM 01 - 20)",
           badge: `${contestants.length}`,
@@ -840,6 +897,7 @@ export default function AdminDashboardPage() {
                       onClick={() => {
                         setActiveTab(item.id);
                         setSidebarOpen(false);
+                        if (item.id === "report") loadFullReport();
                       }}
                       className={`w-full px-3 py-2.5 rounded-xl text-xs font-black flex items-center justify-between transition cursor-pointer text-left ${
                         isActive
@@ -924,6 +982,7 @@ export default function AdminDashboardPage() {
                 <h1 className="text-base sm:text-lg font-black text-[#240638] flex items-center gap-2">
                   <span>
                     {activeTab === "tx" && "1. ຈັດການໃບບິນໂອນເງິນໂຫວດ"}
+                    {activeTab === "report" && "ລາຍງານສະຫຼຸບການເງິນ & ກວດສອບຄະແນນ (Audit Report)"}
                     {activeTab === "contestants" && "2. ຈັດການຜູ້ເຂົ້າປະກວດ (HM 01 - HM 20)"}
                     {activeTab === "packages" && "3. ຈັດການແພັກເກັດຄະແນນໂຫວດ"}
                     {activeTab === "past_queens" && "4. ຈັດການອະດີດນາງສາວ (Hall of Fame 2019 - 2026)"}
@@ -1041,6 +1100,549 @@ export default function AdminDashboardPage() {
               </div>
             </div>
           </div>
+
+          {/* ==================== AUDIT & FINANCIAL REPORT TAB ==================== */}
+          {activeTab === "report" &&
+            (() => {
+              const allTx = reportTransactions || transactions;
+              const approvedTx = allTx.filter((t) => t.status === "APPROVED");
+              const pendingTx = allTx.filter((t) => t.status === "PENDING");
+              const rejectedTx = allTx.filter((t) => t.status === "REJECTED");
+
+              const approvedWithSlip = approvedTx.filter((t) => Boolean(t.slip_image_url));
+              const approvedNoSlip = approvedTx.filter((t) => !t.slip_image_url);
+
+              const sumVotes = (arr) => arr.reduce((s, t) => s + Number(t.points_added || 0), 0);
+              const sumAmount = (arr) => arr.reduce((s, t) => s + Number(t.amount_lak || 0), 0);
+
+              const approvedWithSlipAmt = sumAmount(approvedWithSlip);
+              const approvedWithSlipVotes = sumVotes(approvedWithSlip);
+              const approvedNoSlipAmt = sumAmount(approvedNoSlip);
+              const approvedNoSlipVotes = sumVotes(approvedNoSlip);
+              const totalApprovedAmt = sumAmount(approvedTx);
+              const totalApprovedVotes = sumVotes(approvedTx);
+              const pendingAmt = sumAmount(pendingTx);
+              const pendingVotes = sumVotes(pendingTx);
+              const leaderboardTotalVotes = contestants.reduce(
+                (s, c) => s + Number(c.total_votes || 0),
+                0
+              );
+
+              // Group approved transactions by package rate (votes + unit amount)
+              const packageBreakdownMap = {};
+              for (const t of approvedTx) {
+                const pts = Number(t.points_added || 0);
+                const amt = Number(t.amount_lak || 0);
+                const key = `${pts}_${amt}`;
+                if (!packageBreakdownMap[key]) {
+                  packageBreakdownMap[key] = {
+                    key,
+                    label: t.package_name || `${pts} Votes`,
+                    points: pts,
+                    unitPrice: amt,
+                    count: 0,
+                    totalVotes: 0,
+                    totalLak: 0,
+                    noSlipCount: 0,
+                  };
+                }
+                packageBreakdownMap[key].count += 1;
+                packageBreakdownMap[key].totalVotes += pts;
+                packageBreakdownMap[key].totalLak += amt;
+                if (!t.slip_image_url) packageBreakdownMap[key].noSlipCount += 1;
+              }
+              const packageBreakdown = Object.values(packageBreakdownMap).sort(
+                (a, b) => b.unitPrice - a.unitPrice || b.points - a.points
+              );
+
+              // Per-contestant audit summary
+              const contestantAudit = contestants
+                .map((c) => {
+                  const cApproved = approvedTx.filter((t) => Number(t.contestant_id) === Number(c.id));
+                  const cPending = pendingTx.filter((t) => Number(t.contestant_id) === Number(c.id));
+                  const txVotes = sumVotes(cApproved);
+                  const txLak = sumAmount(cApproved);
+                  const diff = Number(c.total_votes || 0) - txVotes;
+                  return {
+                    ...c,
+                    txCount: cApproved.length,
+                    txVotes,
+                    txLak,
+                    noSlipCount: cApproved.filter((t) => !t.slip_image_url).length,
+                    pendingCount: cPending.length,
+                    pendingLak: sumAmount(cPending),
+                    diff,
+                  };
+                })
+                .filter((c) => c.total_votes > 0 || c.txCount > 0 || c.pendingCount > 0);
+
+              const filteredLedger = allTx.filter((t) => {
+                if (reportFilter === "NO_SLIP") {
+                  return t.status === "APPROVED" && !t.slip_image_url;
+                }
+                if (reportFilter !== "ALL") return t.status === reportFilter;
+                return true;
+              });
+
+              const handleExportTxCsv = () => {
+                exportCsvFile(
+                  `mhvt2027-transactions-report-${new Date().toISOString().slice(0, 10)}.csv`,
+                  [
+                    "ID",
+                    "ວັນທີ/ເວລາ",
+                    "ສະຖານະ",
+                    "ໝາຍເລກ",
+                    "ຊື່ຜູ້ເຂົ້າປະກວດ",
+                    "ແພັກເກັດ",
+                    "ຄະແນນ (Votes)",
+                    "ຈຳນວນເງິນ (ກີບ)",
+                    "ມີຮູບໃບບິນ",
+                    "ລິ້ງໃບບິນ",
+                    "ຜູ້ໂອນ",
+                    "ເບີໂທ",
+                    "ເລກອ້າງອີງ",
+                  ],
+                  filteredLedger.map((t) => [
+                    t.id,
+                    t.created_at,
+                    t.status,
+                    t.contestant_code || "",
+                    t.contestant_name || "",
+                    t.package_name || "",
+                    t.points_added,
+                    t.amount_lak,
+                    t.slip_image_url ? "ມີໃບບິນ" : "ບໍ່ມີໃບບິນ",
+                    t.slip_image_url || "",
+                    t.voter_name || "",
+                    t.voter_phone || "",
+                    t.payment_ref || "",
+                  ])
+                );
+              };
+
+              const handleExportContestantsCsv = () => {
+                exportCsvFile(
+                  `mhvt2027-contestants-audit-${new Date().toISOString().slice(0, 10)}.csv`,
+                  [
+                    "ໝາຍເລກ",
+                    "ຊື່ຜູ້ເຂົ້າປະກວດ",
+                    "ຄະແນນໜ້າເວັບ",
+                    "ຄະແນນຕາມບິນອະນຸມັດ",
+                    "ຍອດເງິນອະນຸມັດ (ກີບ)",
+                    "ຈຳນວນບິນອະນຸມັດ",
+                    "ບິນທີ່ບໍ່ມີຮູບ",
+                    "ບິນລໍຖ້າກວດ (Pending)",
+                    "ສ່ວນຕ່າງ (Diff)",
+                  ],
+                  contestantAudit.map((c) => [
+                    c.code,
+                    c.name,
+                    c.total_votes,
+                    c.txVotes,
+                    c.txLak,
+                    c.txCount,
+                    c.noSlipCount,
+                    c.pendingCount,
+                    c.diff,
+                  ])
+                );
+              };
+
+              return (
+                <div className="space-y-6">
+                  {/* Action Toolbar */}
+                  <div className="rounded-3xl bg-white border border-[#9333ea]/25 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <h2 className="text-lg font-black text-[#240638] flex items-center gap-2">
+                        <BarChart3 className="w-5 h-5 text-[#7e1db3]" />
+                        <span>ລາຍງານກວດສອບການເງິນ & ຄະແນນໂຫວດ (ສຳລັບກອງປະກວດ)</span>
+                      </h2>
+                      <p className="text-xs text-[#644180] mt-0.5">
+                        ສະຫຼຸບຂໍ້ມູນທັງໝົດ {allTx.length} ລາຍການ • ປຽບທຽບຍອດເງິນຕາມໃບບິນກັບຄະແນນໜ້າເວັບ
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={loadFullReport}
+                        disabled={reportLoading}
+                        className="px-3.5 py-2 rounded-xl bg-[#f6effc] hover:bg-[#ede0fa] text-[#520d7a] border border-[#9333ea]/25 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${reportLoading ? "animate-spin" : ""}`} />
+                        <span>ໂຫຼດຄົບທຸກບິນ</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleExportContestantsCsv}
+                        className="px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 text-xs font-black flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>CSV ນາງສາວ</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleExportTxCsv}
+                        className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center gap-1.5 shadow-sm cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>ດາວໂຫຼດ Excel (CSV ບິນ)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => window.print()}
+                        className="px-3.5 py-2 rounded-xl logo-exact-bg text-white text-xs font-black flex items-center gap-1.5 shadow-sm cursor-pointer"
+                      >
+                        <Printer className="w-3.5 h-3.5 text-amber-300" />
+                        <span>ພິມ / Save PDF</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 4 Audit Reconciliation Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="rounded-3xl bg-white border-2 border-emerald-400 p-4 shadow-sm">
+                      <div className="text-xs font-bold text-emerald-700 flex items-center justify-between">
+                        <span>ຍອດເງິນອະນຸມັດ (ມີຮູບໃບບິນ)</span>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      </div>
+                      <div className="text-xl font-black text-emerald-700 mt-1.5">
+                        {approvedWithSlipAmt.toLocaleString()} <span className="text-xs">₭</span>
+                      </div>
+                      <div className="text-[11px] text-gray-600 mt-1">
+                        {approvedWithSlip.length} ບິນ • {approvedWithSlipVotes.toLocaleString()} Votes
+                      </div>
+                    </div>
+
+                    <div
+                      onClick={() => setReportFilter("NO_SLIP")}
+                      className={`rounded-3xl p-4 shadow-sm cursor-pointer transition border-2 ${
+                        approvedNoSlip.length > 0
+                          ? "bg-rose-50 border-rose-400 hover:bg-rose-100/70"
+                          : "bg-white border-gray-200"
+                      }`}
+                    >
+                      <div className="text-xs font-bold text-rose-700 flex items-center justify-between">
+                        <span>⚠️ ອະນຸມັດແຕ່ບໍ່ມີຮູບບິນ (Demo ເກົ່າ)</span>
+                        <AlertTriangle className="w-4 h-4 text-rose-600" />
+                      </div>
+                      <div className="text-xl font-black text-rose-700 mt-1.5">
+                        {approvedNoSlipAmt.toLocaleString()} <span className="text-xs">₭</span>
+                      </div>
+                      <div className="text-[11px] text-rose-700/80 mt-1 font-semibold">
+                        {approvedNoSlip.length} ລາຍການ • {approvedNoSlipVotes.toLocaleString()} Votes (ຄລິກເພື່ອກວດ)
+                      </div>
+                    </div>
+
+                    <div className="rounded-3xl bg-white border border-amber-300 p-4 shadow-sm">
+                      <div className="text-xs font-bold text-amber-700 flex items-center justify-between">
+                        <span>ລໍຖ້າກວດສອບ (Pending)</span>
+                        <Clock className="w-4 h-4 text-amber-600" />
+                      </div>
+                      <div className="text-xl font-black text-amber-600 mt-1.5">
+                        {pendingAmt.toLocaleString()} <span className="text-xs">₭</span>
+                      </div>
+                      <div className="text-[11px] text-gray-600 mt-1">
+                        {pendingTx.length} ລາຍການ • {pendingVotes.toLocaleString()} Votes
+                      </div>
+                    </div>
+
+                    <div className="rounded-3xl bg-white border border-[#9333ea]/30 p-4 shadow-sm">
+                      <div className="text-xs font-bold text-[#644180] flex items-center justify-between">
+                        <span>ຄວາມຕົງກັນຂອງຄະແນນ</span>
+                        <ShieldCheck className="w-4 h-4 text-[#7e1db3]" />
+                      </div>
+                      <div className="text-xl font-black text-[#520d7a] mt-1.5">
+                        {leaderboardTotalVotes.toLocaleString()} / {totalApprovedVotes.toLocaleString()}{" "}
+                        <span className="text-xs">Votes</span>
+                      </div>
+                      <div className="text-[11px] font-bold mt-1">
+                        {leaderboardTotalVotes === totalApprovedVotes ? (
+                          <span className="text-emerald-700">✓ ຄະແນນໜ້າເວັບ & ບິນຕົງກັນ 100%</span>
+                        ) : (
+                          <span className="text-rose-600">
+                            ⚠️ ຕ່າງກັນ {(leaderboardTotalVotes - totalApprovedVotes).toLocaleString()} Votes
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Two Tables Side by Side: Package Breakdown + Contestant Summary */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                    {/* Package Breakdown Proof */}
+                    <div className="lg:col-span-5 rounded-3xl bg-white border border-[#9333ea]/25 overflow-hidden shadow-sm">
+                      <div className="px-5 py-3.5 bg-[#f6effc] border-b border-[#9333ea]/15">
+                        <h3 className="font-black text-sm text-[#240638]">
+                          ສະຫຼຸບຍອດເງິນແຍກຕາມອັດຕາແພັກເກັດ (Approved)
+                        </h3>
+                        <p className="text-[11px] text-[#644180]">
+                          ພິສູດຍອດເງິນ {totalApprovedAmt.toLocaleString()} ₭ ຈາກ {totalApprovedVotes.toLocaleString()} Votes
+                        </p>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs text-left">
+                          <thead className="bg-gray-50 text-[#644180] border-b border-gray-100">
+                            <tr>
+                              <th className="py-2.5 px-3 font-black">ແພັກເກັດ / ລາຄາ</th>
+                              <th className="py-2.5 px-2 font-black text-center">ຈຳນວນບິນ</th>
+                              <th className="py-2.5 px-2 font-black text-right">ຄະແນນ</th>
+                              <th className="py-2.5 px-3 font-black text-right">ລວມເງິນ (₭)</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {packageBreakdown.map((p) => (
+                              <tr key={p.key} className="hover:bg-[#faf6fd]">
+                                <td className="py-2.5 px-3">
+                                  <div className="font-bold text-[#240638]">{p.points} Votes</div>
+                                  <div className="text-[10px] text-gray-500">
+                                    @{p.unitPrice.toLocaleString()} ₭/ບິນ
+                                  </div>
+                                </td>
+                                <td className="py-2.5 px-2 text-center font-bold">
+                                  {p.count}
+                                  {p.noSlipCount > 0 && (
+                                    <span className="block text-[9px] text-rose-600 font-bold">
+                                      ({p.noSlipCount} ບໍ່ມີຮູບ)
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="py-2.5 px-2 text-right font-black text-[#520d7a]">
+                                  +{p.totalVotes.toLocaleString()}
+                                </td>
+                                <td className="py-2.5 px-3 text-right font-black text-emerald-700">
+                                  {p.totalLak.toLocaleString()}
+                                </td>
+                              </tr>
+                            ))}
+                            <tr className="bg-[#f6effc] font-black text-[#240638]">
+                              <td className="py-2.5 px-3">ລວມທັງໝົດ</td>
+                              <td className="py-2.5 px-2 text-center">{approvedTx.length}</td>
+                              <td className="py-2.5 px-2 text-right text-[#520d7a]">
+                                {totalApprovedVotes.toLocaleString()}
+                              </td>
+                              <td className="py-2.5 px-3 text-right text-emerald-700">
+                                {totalApprovedAmt.toLocaleString()} ₭
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Contestant Audit Table */}
+                    <div className="lg:col-span-7 rounded-3xl bg-white border border-[#9333ea]/25 overflow-hidden shadow-sm">
+                      <div className="px-5 py-3.5 bg-[#f6effc] border-b border-[#9333ea]/15">
+                        <h3 className="font-black text-sm text-[#240638]">
+                          ສະຫຼຸບຄະແນນ & ຍອດເງິນແຍກຕາມໝາຍເລກນາງສາວ
+                        </h3>
+                        <p className="text-[11px] text-[#644180]">
+                          ກວດສອບຄະແນນໜ້າເວັບທຽບກັບບິນທີ່ອະນຸມັດແລ້ວຂອງແຕ່ລະໝາຍເລກ
+                        </p>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs text-left">
+                          <thead className="bg-gray-50 text-[#644180] border-b border-gray-100">
+                            <tr>
+                              <th className="py-2.5 px-3 font-black">ໝາຍເລກ & ຊື່</th>
+                              <th className="py-2.5 px-2 font-black text-right">ໜ້າເວັບ</th>
+                              <th className="py-2.5 px-2 font-black text-right">ຕາມບິນ</th>
+                              <th className="py-2.5 px-3 font-black text-right">ຍອດເງິນ (₭)</th>
+                              <th className="py-2.5 px-2 font-black text-center">ບໍ່ມີບິນ / ລໍຖ້າ</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {contestantAudit.map((c) => (
+                              <tr key={c.id} className="hover:bg-[#faf6fd]">
+                                <td className="py-2 px-3">
+                                  <span className="font-black text-[#520d7a]">{c.code}</span>{" "}
+                                  <span className="font-semibold text-[#240638]">{c.name}</span>
+                                </td>
+                                <td className="py-2 px-2 text-right font-black text-[#240638]">
+                                  {c.total_votes.toLocaleString()}
+                                </td>
+                                <td className="py-2 px-2 text-right font-bold text-[#644180]">
+                                  {c.txVotes.toLocaleString()}
+                                  {c.diff !== 0 && (
+                                    <span className="text-[10px] text-rose-600 block">
+                                      (Diff: {c.diff > 0 ? "+" : ""}
+                                      {c.diff})
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="py-2 px-3 text-right font-black text-emerald-700">
+                                  {c.txLak.toLocaleString()}
+                                </td>
+                                <td className="py-2 px-2 text-center text-[11px]">
+                                  {c.noSlipCount > 0 && (
+                                    <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 font-black mr-1">
+                                      {c.noSlipCount} ບໍ່ມີຮູບ
+                                    </span>
+                                  )}
+                                  {c.pendingCount > 0 && (
+                                    <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold">
+                                      {c.pendingCount} ລໍຖ້າ
+                                    </span>
+                                  )}
+                                  {c.noSlipCount === 0 && c.pendingCount === 0 && (
+                                    <span className="text-emerald-600 font-bold">✓</span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Detailed Audit Ledger */}
+                  <div className="rounded-3xl bg-white border border-[#9333ea]/25 overflow-hidden shadow-sm">
+                    <div className="px-5 py-4 bg-[#f6effc] border-b border-[#9333ea]/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="font-black text-sm text-[#240638]">
+                          ບັນຊີລາຍການບິນລະອຽດ ({filteredLedger.length} ລາຍການ)
+                        </h3>
+                        <p className="text-[11px] text-[#644180]">
+                          ກວດສອບຮູບໃບບິນແຕ່ລະໃບ ຫຼື ກົດປະຕິເສດລາຍການທີ່ບໍ່ມີບິນໂອນເງິນຈິງ
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1 bg-white p-1 rounded-xl border border-[#9333ea]/25 text-xs">
+                        {[
+                          { id: "ALL", label: `ທັງໝົດ (${allTx.length})` },
+                          { id: "APPROVED", label: `ອະນຸມັດ (${approvedTx.length})` },
+                          { id: "NO_SLIP", label: `⚠️ ອະນຸມັດບໍ່ມີບິນ (${approvedNoSlip.length})` },
+                          { id: "PENDING", label: `ລໍຖ້າ (${pendingTx.length})` },
+                          { id: "REJECTED", label: `ປະຕິເສດ (${rejectedTx.length})` },
+                        ].map((tab) => (
+                          <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setReportFilter(tab.id)}
+                            className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
+                              reportFilter === tab.id
+                                ? tab.id === "NO_SLIP"
+                                  ? "bg-rose-600 text-white"
+                                  : "logo-exact-bg text-white"
+                                : "text-[#644180] hover:text-[#240638]"
+                            }`}
+                          >
+                            {tab.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs text-left">
+                        <thead className="bg-gray-50 text-[#644180] border-b border-gray-100">
+                          <tr>
+                            <th className="py-2.5 px-3 font-black">ID / ເວລາ</th>
+                            <th className="py-2.5 px-3 font-black">ໝາຍເລກ</th>
+                            <th className="py-2.5 px-3 font-black">ຜູ້ໂອນ / ອ້າງອີງ</th>
+                            <th className="py-2.5 px-3 font-black text-right">ຄະແນນ</th>
+                            <th className="py-2.5 px-3 font-black text-right">ຈຳນວນເງິນ</th>
+                            <th className="py-2.5 px-3 font-black text-center">ໃບບິນ</th>
+                            <th className="py-2.5 px-3 font-black text-center">ສະຖານະ / ຈັດການ</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {filteredLedger.map((tx) => (
+                            <tr
+                              key={tx.id}
+                              className={`hover:bg-[#faf6fd] ${
+                                tx.status === "APPROVED" && !tx.slip_image_url ? "bg-rose-50/50" : ""
+                              }`}
+                            >
+                              <td className="py-2 px-3 whitespace-nowrap">
+                                <div className="font-mono font-bold text-[#520d7a]">#{tx.id}</div>
+                                <div className="text-[10px] text-gray-500">{tx.created_at}</div>
+                              </td>
+                              <td className="py-2 px-3 whitespace-nowrap">
+                                <span className="font-black text-[#240638]">{tx.contestant_code}</span>
+                                <div className="text-[10px] text-[#644180] max-w-[130px] truncate">
+                                  {tx.contestant_name}
+                                </div>
+                              </td>
+                              <td className="py-2 px-3">
+                                <div className="font-bold text-[#240638] max-w-[150px] truncate">
+                                  {tx.voter_name}
+                                </div>
+                                <div className="text-[10px] text-gray-500 font-mono">
+                                  {tx.voter_phone} • {tx.payment_ref}
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-right font-black text-[#520d7a]">
+                                +{Number(tx.points_added || 0).toLocaleString()}
+                              </td>
+                              <td className="py-2 px-3 text-right font-black text-[#240638]">
+                                {Number(tx.amount_lak || 0).toLocaleString()} ₭
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                {tx.slip_image_url ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => setViewingSlip(tx)}
+                                    className="px-2 py-1 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <Eye className="w-3 h-3" />
+                                    <span>ເບິ່ງບິນ</span>
+                                  </button>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-700 font-black text-[10px]">
+                                    ❌ ບໍ່ມີຮູບບິນ
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-2 px-3 text-center whitespace-nowrap">
+                                <div className="inline-flex items-center gap-1.5">
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                                      tx.status === "APPROVED"
+                                        ? "bg-emerald-100 text-emerald-700"
+                                        : tx.status === "PENDING"
+                                        ? "bg-amber-100 text-amber-800"
+                                        : "bg-rose-100 text-rose-700"
+                                    }`}
+                                  >
+                                    {tx.status}
+                                  </span>
+                                  {tx.status === "PENDING" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => callAdminApi("APPROVE_TX", { id: tx.id })}
+                                      className="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold cursor-pointer"
+                                    >
+                                      ອະນຸມັດ
+                                    </button>
+                                  )}
+                                  {tx.status !== "REJECTED" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (
+                                          confirm(
+                                            `ຕ້ອງການປະຕິເສດລາຍການ #${tx.id} (${tx.contestant_code} • ${tx.points_added} Votes) ແລະ ຫັກຄະແນນຄືນບໍ່?`
+                                          )
+                                        ) {
+                                          callAdminApi("REJECT_TX", { id: tx.id });
+                                        }
+                                      }}
+                                      className="px-2 py-0.5 rounded bg-rose-100 hover:bg-rose-200 text-rose-700 text-[10px] font-bold cursor-pointer"
+                                    >
+                                      ປະຕິເສດ
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
           {/* ==================== TAB 1: TRANSACTIONS TABLE (FIXED NO-WRAP) ==================== */}
           {activeTab === "tx" && (
