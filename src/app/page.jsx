@@ -461,10 +461,10 @@ export default function HomePage() {
   const [copiedBank, setCopiedBank] = useState(false);
 
   const [detailContestant, setDetailContestant] = useState(null);
-  const [committeeList, setCommitteeList] = useState(INITIAL_COMMITTEE);
+  const [committeeList, setCommitteeList] = useState([]);
   const [ticketList, setTicketList] = useState([]);
-  const [scheduleList, setScheduleList] = useState(SCHEDULE_ITEMS);
-  const [newsList, setNewsList] = useState(NEWS_ITEMS);
+  const [scheduleList, setScheduleList] = useState([]);
+  const [newsList, setNewsList] = useState([]);
   const [selectedNewsDetail, setSelectedNewsDetail] = useState(null);
   const [activeNewsImageIndex, setActiveNewsImageIndex] = useState(0);
   const [newsFilterCategory, setNewsFilterCategory] = useState("ALL");
@@ -874,27 +874,12 @@ export default function HomePage() {
       ? Math.max(1, topThree[0].total_votes - topThree[1].total_votes)
       : 0;
 
-  const navLinks = [
-    { href: "#home", label: lang === "LA" ? "ໜ້າຫຼັກ" : "Home", icon: Home },
-    { href: "#leaderboard", label: lang === "LA" ? "ອັນດັບໂຫວດ" : "Leaderboard", icon: Trophy },
-    { href: "#contestants", label: lang === "LA" ? "ຜູ້ເຂົ້າປະກວດ" : "Contestants", icon: Crown },
-    { href: "#past-queens", label: lang === "LA" ? "ອະດີດນາງສາວ" : "Hall of Fame", icon: Award },
-    { href: "#committee", label: lang === "LA" ? "ຄະນະກຳມະການ" : "Committee", icon: Users },
-    ...(ticketList.length > 0
-      ? [{ href: "#tickets", label: lang === "LA" ? "ປີ້ເຂົ້າຊົມ" : "Tickets", icon: Ticket }]
-      : []),
-    { href: "#schedule", label: lang === "LA" ? "ຕາຕະລາງ" : "Schedule", icon: Calendar },
-    { href: "#news", label: lang === "LA" ? "ຂ່າວສານ" : "News", icon: Newspaper },
-    { href: "#sponsors", label: lang === "LA" ? "ຜູ້ສະໜັບສະໜູນ" : "Sponsors", icon: Handshake },
-    { href: "#about", label: lang === "LA" ? "ກ່ຽວກັບ" : "About", icon: BookOpen },
-  ];
-
   const chairman =
-    committeeList.find((c) => c.featured) || committeeList[0] || INITIAL_COMMITTEE[0];
+    committeeList.find((c) => c.featured) || committeeList[0] || null;
   const directors = committeeList.filter((c) => c.id !== chairman?.id);
 
   const formattedSponsors = useMemo(() => {
-    if (!sponsorsRaw || sponsorsRaw.length === 0) return SPONSORS;
+    if (!sponsorsRaw || sponsorsRaw.length === 0) return [];
     const tiersOrder = ["DIAMOND", "PLATINUM", "GOLD"];
     const tierMeta = {
       DIAMOND: { tier: "DIAMOND SPONSORS", color: "from-amber-300 via-amber-400 to-amber-600" },
@@ -912,6 +897,31 @@ export default function HomePage() {
       })
       .filter((g) => g.items.length > 0);
   }, [sponsorsRaw]);
+
+  const navLinks = [
+    { href: "#home", label: lang === "LA" ? "ໜ້າຫຼັກ" : "Home", icon: Home },
+    { href: "#leaderboard", label: lang === "LA" ? "ອັນດັບໂຫວດ" : "Leaderboard", icon: Trophy },
+    { href: "#contestants", label: lang === "LA" ? "ຜູ້ເຂົ້າປະກວດ" : "Contestants", icon: Crown },
+    ...(pastQueens.length > 0
+      ? [{ href: "#past-queens", label: lang === "LA" ? "ອະດີດນາງສາວ" : "Hall of Fame", icon: Award }]
+      : []),
+    ...(committeeList.length > 0
+      ? [{ href: "#committee", label: lang === "LA" ? "ຄະນະກຳມະການ" : "Committee", icon: Users }]
+      : []),
+    ...(ticketList.length > 0
+      ? [{ href: "#tickets", label: lang === "LA" ? "ປີ້ເຂົ້າຊົມ" : "Tickets", icon: Ticket }]
+      : []),
+    ...(scheduleList.length > 0
+      ? [{ href: "#schedule", label: lang === "LA" ? "ຕາຕະລາງ" : "Schedule", icon: Calendar }]
+      : []),
+    ...(newsList.length > 0
+      ? [{ href: "#news", label: lang === "LA" ? "ຂ່າວສານ" : "News", icon: Newspaper }]
+      : []),
+    ...(formattedSponsors.length > 0
+      ? [{ href: "#sponsors", label: lang === "LA" ? "ຜູ້ສະໜັບສະໜູນ" : "Sponsors", icon: Handshake }]
+      : []),
+    { href: "#about", label: lang === "LA" ? "ກ່ຽວກັບ" : "About", icon: BookOpen },
+  ];
 
   return (
     <div id="home" className="min-h-screen flex flex-col bg-[#f8f4fc] text-[#240638]">
@@ -1291,6 +1301,7 @@ export default function HomePage() {
       </section>
 
       {/* SECTION: EXECUTIVE COMMITTEE (ຄະນະປະທານ ແລະ ຄະນະບໍລິຫານກອງປະກວດ 5 ທ່ານ) */}
+      {committeeList.length > 0 && chairman && (
       <section id="committee" className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 pb-8 w-full">
         <div className="rounded-[40px] garden-luxury-dark border-2 border-amber-400/50 p-6 sm:p-10 lg:p-12 shadow-2xl relative overflow-hidden text-white">
           {/* Decorative Royal Gold & Purple Spotlights */}
@@ -1438,6 +1449,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* SECTION 2: LIVE LEADERBOARD TOP 5 PODIUM & FULL RANKING TABLE */}
       {topFive.length >= 3 && (
@@ -1988,6 +2000,7 @@ export default function HomePage() {
       </section>
 
       {/* ==================== SECTION: HALL OF FAME / PAST QUEENS ==================== */}
+      {pastQueens.length > 0 && (
       <section id="past-queens" className="py-20 px-4 sm:px-6 relative overflow-hidden bg-gradient-to-b from-[#1c022e] via-[#24043b] to-[#160124] text-white border-y border-amber-400/30">
         {/* Glow ambient background */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] bg-purple-600/10 blur-[140px] rounded-full pointer-events-none" />
@@ -2069,6 +2082,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* SECTION 4: TICKETS */}
       {ticketList.length > 0 && (
@@ -2167,6 +2181,7 @@ export default function HomePage() {
       )}
 
       {/* SECTION 5: SCHEDULE */}
+      {scheduleList.length > 0 && (
       <section id="schedule" className="max-w-7xl mx-auto px-4 sm:px-6 py-10 w-full">
         <div className="rounded-[32px] bg-white border border-[#9333ea]/25 p-6 sm:p-8 shadow-xl">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
@@ -2229,8 +2244,10 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* SECTION 6: NEWS & ACTIVITIES */}
+      {newsList.length > 0 && (
       <section id="news" className="max-w-7xl mx-auto px-4 sm:px-6 py-8 w-full space-y-6">
         <div className="rounded-[32px] bg-white border border-[#9333ea]/25 p-6 sm:p-8 shadow-xl space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-gray-100">
@@ -2482,6 +2499,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* SECTION 7: PRIZES, SPONSORS & ABOUT LAO ETHNIC GARDEN (PHEUKSA) */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10 w-full space-y-10">
@@ -2526,6 +2544,7 @@ export default function HomePage() {
         </div>
 
         {/* Sponsors */}
+        {formattedSponsors.length > 0 && (
         <div
           id="sponsors"
           className="rounded-[32px] bg-white border border-[#9333ea]/25 p-6 sm:p-8 shadow-xl space-y-6"
@@ -2574,6 +2593,7 @@ export default function HomePage() {
             ))}
           </div>
         </div>
+        )}
 
         {/* About Us & Official PHEUKSA / Lao Ethnic Garden Details */}
         <div

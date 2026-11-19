@@ -98,6 +98,11 @@ export async function POST(req) {
 
     const db = getDb();
 
+    // Ensure frontend section seeding never re-populates items explicitly deleted by Admin
+    if (String(action || "").startsWith("DELETE_")) {
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('frontend_seeded', '1')").run();
+    }
+
     if (action === "GET_REPORT_DATA") {
       const allTransactions = db
         .prepare(`
