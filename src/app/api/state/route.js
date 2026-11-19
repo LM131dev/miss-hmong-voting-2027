@@ -26,7 +26,7 @@ export async function GET() {
         LEFT JOIN contestants c ON t.contestant_id = c.id
         LEFT JOIN vote_packages p ON t.package_id = p.id
         ORDER BY t.id DESC
-        LIMIT 50
+        LIMIT 300
       `)
       .all();
 

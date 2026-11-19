@@ -1,12 +1,12 @@
 export const EIGHT_PACKAGES = [
   { name: "Single Vote (1 Vote)", points: 1, price_lak: 10000, badge: "ເລີ່ມຕົ້ນ" },
-  { name: "Popular Pack (5 Votes)", points: 5, price_lak: 40000, badge: "ປະຢັດ 20%" },
-  { name: "Mega Pack (20 Votes)", points: 20, price_lak: 150000, badge: "ຂາຍດີສຸດ" },
-  { name: "VIP Pack (50 Votes)", points: 50, price_lak: 350000, badge: "ປະຢັດ 30%" },
-  { name: "Super Crown (100 Votes)", points: 100, price_lak: 600000, badge: "Super VIP" },
-  { name: "Diamond Pack (200 Votes)", points: 200, price_lak: 1000000, badge: "Diamond" },
-  { name: "Crown Ambassador (1,100 Votes)", points: 1100, price_lak: 5000000, badge: "Crown VIP" },
-  { name: "Royal Grand Sponsor (2,500 Votes)", points: 2500, price_lak: 10000000, badge: "Royal VIP" },
+  { name: "Popular Pack (5 Votes)", points: 5, price_lak: 50000, badge: "ນິຍົມ" },
+  { name: "Mega Pack (20 Votes)", points: 20, price_lak: 200000, badge: "ຂາຍດີສຸດ" },
+  { name: "VIP Pack (50 Votes)", points: 50, price_lak: 500000, badge: "VIP" },
+  { name: "Super Crown (100 Votes)", points: 100, price_lak: 1000000, badge: "Super VIP" },
+  { name: "Diamond Pack (200 Votes)", points: 200, price_lak: 2000000, badge: "Diamond" },
+  { name: "Crown Ambassador (500 Votes)", points: 500, price_lak: 5000000, badge: "Crown VIP" },
+  { name: "Royal Grand Sponsor (1,000 Votes)", points: 1000, price_lak: 10000000, badge: "Royal VIP" },
 ];
 
 export const OFFICIAL_CONTESTANTS = [

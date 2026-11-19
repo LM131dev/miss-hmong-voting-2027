@@ -1607,7 +1607,7 @@ export default function HomePage() {
               {packages.map((pkg, idx) => {
                 const isSelected = selectedPkg?.id === pkg.id;
                 const isPopular = pkg.points === 20;
-                const isTopVip = pkg.points >= 1100;
+                const isTopVip = pkg.points >= 500;
                 return (
                   <button
                     key={pkg.id || idx}
@@ -3381,7 +3381,7 @@ export default function HomePage() {
                       {packages.map((pkg, idx) => {
                         const isSelected = selectedPkg?.id === pkg.id;
                         const isPopular = pkg.points === 20;
-                        const isVip = pkg.points === 2500 || pkg.points === 1100;
+                        const isVip = pkg.points >= 500;
                         return (
                           <button
                             key={pkg.id || idx}
