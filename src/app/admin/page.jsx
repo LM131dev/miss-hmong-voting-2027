@@ -1322,7 +1322,7 @@ export default function AdminDashboardPage() {
                       }`}
                     >
                       <div className="text-xs font-bold text-rose-700 flex items-center justify-between">
-                        <span>⚠️ ອະນຸມັດແຕ່ບໍ່ມີຮູບບິນ (Demo ເກົ່າ)</span>
+                        <span>⚠️ ອະນຸມັດແຕ່ບໍ່ມີຮູບໃບບິນ</span>
                         <AlertTriangle className="w-4 h-4 text-rose-600" />
                       </div>
                       <div className="text-xl font-black text-rose-700 mt-1.5">
@@ -1331,6 +1331,24 @@ export default function AdminDashboardPage() {
                       <div className="text-[11px] text-rose-700/80 mt-1 font-semibold">
                         {approvedNoSlip.length} ລາຍການ • {approvedNoSlipVotes.toLocaleString()} Votes (ຄລິກເພື່ອກວດ)
                       </div>
+                      {(approvedNoSlip.length > 0 || pendingTx.some((t) => !t.slip_image_url)) && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (
+                              confirm(
+                                `⚠️ ຢືນຢັນລຶບລາຍການທີ່ບໍ່ມີຮູບໃບບິນທັງໝົດອອກຈາກລະບົບ ແລະ ຫັກຄະແນນທີ່ບວກເກີນ (${approvedNoSlipVotes} Votes) ຄືນທັນທີບໍ່?`
+                              )
+                            ) {
+                              callAdminApi("CLEANUP_NO_SLIP_TX", { mode: "ALL_NO_SLIP" });
+                            }
+                          }}
+                          className="mt-2 w-full py-1 px-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-black cursor-pointer"
+                        >
+                          🗑️ ລຶບລາຍການບໍ່ມີບິນທັງໝົດ
+                        </button>
+                      )}
                     </div>
 
                     <div className="rounded-3xl bg-white border border-amber-300 p-4 shadow-sm">
@@ -1632,6 +1650,22 @@ export default function AdminDashboardPage() {
                                       ປະຕິເສດ
                                     </button>
                                   )}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (
+                                        confirm(
+                                          `ຕ້ອງການລຶບລາຍການ #${tx.id} (${tx.contestant_code} • ${tx.points_added} Votes) ອອກຖາວອນບໍ່?`
+                                        )
+                                      ) {
+                                        callAdminApi("DELETE_TX", { id: tx.id });
+                                      }
+                                    }}
+                                    className="p-1 rounded bg-gray-100 hover:bg-rose-100 text-gray-500 hover:text-rose-700 cursor-pointer"
+                                    title="ລຶບລາຍການຖາວອນ"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
                                 </div>
                               </td>
                             </tr>
@@ -1799,6 +1833,21 @@ export default function AdminDashboardPage() {
                                   ປະຕິເສດ
                                 </button>
                               )}
+                              <button
+                                onClick={() => {
+                                  if (
+                                    confirm(
+                                      `ຕ້ອງການລຶບລາຍການ #${tx.id} (${tx.contestant_code} • ${tx.points_added} Votes) ອອກຖາວອນບໍ່?`
+                                    )
+                                  ) {
+                                    callAdminApi("DELETE_TX", { id: tx.id });
+                                  }
+                                }}
+                                className="p-1.5 rounded-lg bg-gray-100 hover:bg-rose-100 text-gray-500 hover:text-rose-700 cursor-pointer"
+                                title="ລຶບລາຍການຖາວອນ"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </td>
                         </tr>

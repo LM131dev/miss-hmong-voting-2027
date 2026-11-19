@@ -166,6 +166,59 @@ export async function POST(req) {
       return NextResponse.json({ success: true, message: "ປະຕິເສດລາຍການບິນແລ້ວ" });
     }
 
+    if (action === "DELETE_TX") {
+      const txId = Number(payload.id);
+      const tx = db
+        .prepare("SELECT * FROM vote_transactions WHERE id = ?")
+        .get(txId);
+
+      if (!tx) {
+        return NextResponse.json({ error: "ບໍ່ພົບລາຍການບິນນີ້" }, { status: 404 });
+      }
+
+      if (tx.status === "APPROVED") {
+        db.prepare(
+          "UPDATE contestants SET total_votes = MAX(0, total_votes - ?) WHERE id = ?"
+        ).run(tx.points_added, tx.contestant_id);
+      }
+
+      db.prepare("DELETE FROM vote_transactions WHERE id = ?").run(txId);
+      return NextResponse.json({ success: true, message: `ລຶບລາຍການ #${txId} ອອກສຳເລັດແລ້ວ` });
+    }
+
+    if (action === "CLEANUP_NO_SLIP_TX") {
+      const mode = String(payload.mode || "PENDING_NO_SLIP");
+      let statusCondition = "status = 'PENDING'";
+      if (mode === "APPROVED_NO_SLIP") statusCondition = "status = 'APPROVED'";
+      else if (mode === "ALL_NO_SLIP") statusCondition = "status IN ('PENDING', 'APPROVED', 'REJECTED')";
+
+      const targets = db
+        .prepare(`
+          SELECT * FROM vote_transactions
+          WHERE (slip_image_url IS NULL OR TRIM(slip_image_url) = '')
+            AND COALESCE(payment_ref, '') != 'ADMIN-MANUAL'
+            AND ${statusCondition}
+        `)
+        .all();
+
+      const deductVotes = db.prepare(
+        "UPDATE contestants SET total_votes = MAX(0, total_votes - ?) WHERE id = ?"
+      );
+      const deleteTx = db.prepare("DELETE FROM vote_transactions WHERE id = ?");
+
+      for (const tx of targets) {
+        if (tx.status === "APPROVED") {
+          deductVotes.run(tx.points_added, tx.contestant_id);
+        }
+        deleteTx.run(tx.id);
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `ລຶບລາຍການບໍ່ມີຮູບໃບບິນ ${targets.length} ລາຍການສຳເລັດແລ້ວ!`,
+      });
+    }
+
     if (action === "SAVE_CONTESTANT") {
       const {
         id,
