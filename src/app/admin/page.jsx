@@ -288,6 +288,8 @@ export default function AdminDashboardPage() {
   // 10 Tabs: tx, contestants, committee, packages, tickets, schedule, news, sponsors, venue, settings
   const [activeTab, setActiveTab] = useState("tx");
   const [txFilter, setTxFilter] = useState("ALL");
+  const [txContestantFilter, setTxContestantFilter] = useState("ALL");
+  const [txSearch, setTxSearch] = useState("");
   const [reportFilter, setReportFilter] = useState("ALL");
   const [reportTransactions, setReportTransactions] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
@@ -708,9 +710,24 @@ export default function AdminDashboardPage() {
     );
   }
 
-  const filteredTransactions = transactions.filter(
-    (t) => txFilter === "ALL" || t.status === txFilter
-  );
+  const matchesTxFilter = (t, statusFilter) => {
+    if (statusFilter === "NO_SLIP") {
+      if (!(t.status === "APPROVED" && !t.slip_image_url)) return false;
+    } else if (statusFilter !== "ALL" && t.status !== statusFilter) {
+      return false;
+    }
+    if (txContestantFilter !== "ALL" && t.contestant_code !== txContestantFilter) {
+      return false;
+    }
+    if (txSearch.trim()) {
+      const q = txSearch.trim().toLowerCase();
+      const hay = `${t.id} ${t.payment_ref || ""} ${t.voter_name || ""} ${t.voter_phone || ""} ${t.contestant_code || ""} ${t.contestant_name || ""}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  };
+
+  const filteredTransactions = transactions.filter((t) => matchesTxFilter(t, txFilter));
 
   const filteredContestants = contestants.filter((c) => {
     if (!contestantSearch.trim()) return true;
@@ -1176,13 +1193,7 @@ export default function AdminDashboardPage() {
                 })
                 .filter((c) => c.total_votes > 0 || c.txCount > 0 || c.pendingCount > 0);
 
-              const filteredLedger = allTx.filter((t) => {
-                if (reportFilter === "NO_SLIP") {
-                  return t.status === "APPROVED" && !t.slip_image_url;
-                }
-                if (reportFilter !== "ALL") return t.status === reportFilter;
-                return true;
-              });
+              const filteredLedger = allTx.filter((t) => matchesTxFilter(t, reportFilter));
 
               const handleExportTxCsv = () => {
                 exportCsvFile(
@@ -1454,7 +1465,7 @@ export default function AdminDashboardPage() {
                           ສະຫຼຸບຄະແນນ & ຍອດເງິນແຍກຕາມໝາຍເລກນາງສາວ
                         </h3>
                         <p className="text-[11px] text-[#644180]">
-                          ກວດສອບຄະແນນໜ້າເວັບທຽບກັບບິນທີ່ອະນຸມັດແລ້ວຂອງແຕ່ລະໝາຍເລກ
+                          ກວດສອບຄະແນນໜ້າເວັບທຽບກັບບິນ • ຄລິກໃສ່ແຖວຂອງນາງສາວເພື່ອເບິ່ງບິນທັງໝົດຂອງໝາຍເລກນັ້ນ
                         </p>
                       </div>
                       <div className="overflow-x-auto">
@@ -1470,7 +1481,20 @@ export default function AdminDashboardPage() {
                           </thead>
                           <tbody className="divide-y divide-gray-100">
                             {contestantAudit.map((c) => (
-                              <tr key={c.id} className="hover:bg-[#faf6fd]">
+                              <tr
+                                key={c.id}
+                                onClick={() =>
+                                  setTxContestantFilter(
+                                    txContestantFilter === c.code ? "ALL" : c.code
+                                  )
+                                }
+                                className={`cursor-pointer transition ${
+                                  txContestantFilter === c.code
+                                    ? "bg-[#f3ebfa] ring-1 ring-inset ring-[#7e1db3]"
+                                    : "hover:bg-[#faf6fd]"
+                                }`}
+                                title={`ຄລິກເພື່ອກອງເບິ່ງທຸກບິນຂອງ ${c.code}`}
+                              >
                                 <td className="py-2 px-3">
                                   <span className="font-black text-[#520d7a]">{c.code}</span>{" "}
                                   <span className="font-semibold text-[#240638]">{c.name}</span>
@@ -1515,38 +1539,84 @@ export default function AdminDashboardPage() {
 
                   {/* Detailed Audit Ledger */}
                   <div className="rounded-3xl bg-white border border-[#9333ea]/25 overflow-hidden shadow-sm">
-                    <div className="px-5 py-4 bg-[#f6effc] border-b border-[#9333ea]/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div>
-                        <h3 className="font-black text-sm text-[#240638]">
-                          ບັນຊີລາຍການບິນລະອຽດ ({filteredLedger.length} ລາຍການ)
-                        </h3>
-                        <p className="text-[11px] text-[#644180]">
-                          ກວດສອບຮູບໃບບິນແຕ່ລະໃບ ຫຼື ກົດປະຕິເສດລາຍການທີ່ບໍ່ມີບິນໂອນເງິນຈິງ
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-1 bg-white p-1 rounded-xl border border-[#9333ea]/25 text-xs">
-                        {[
-                          { id: "ALL", label: `ທັງໝົດ (${allTx.length})` },
-                          { id: "APPROVED", label: `ອະນຸມັດ (${approvedTx.length})` },
-                          { id: "NO_SLIP", label: `⚠️ ອະນຸມັດບໍ່ມີບິນ (${approvedNoSlip.length})` },
-                          { id: "PENDING", label: `ລໍຖ້າ (${pendingTx.length})` },
-                          { id: "REJECTED", label: `ປະຕິເສດ (${rejectedTx.length})` },
-                        ].map((tab) => (
-                          <button
-                            key={tab.id}
-                            type="button"
-                            onClick={() => setReportFilter(tab.id)}
-                            className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
-                              reportFilter === tab.id
-                                ? tab.id === "NO_SLIP"
-                                  ? "bg-rose-600 text-white"
-                                  : "logo-exact-bg text-white"
-                                : "text-[#644180] hover:text-[#240638]"
-                            }`}
+                    <div className="px-5 py-4 bg-[#f6effc] border-b border-[#9333ea]/15 space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                          <h3 className="font-black text-sm text-[#240638]">
+                            ບັນຊີລາຍການບິນລະອຽດ ({filteredLedger.length} ລາຍການ)
+                            {txContestantFilter !== "ALL" && (
+                              <span className="ml-2 px-2 py-0.5 rounded-lg logo-exact-bg text-white text-xs">
+                                {txContestantFilter}
+                              </span>
+                            )}
+                          </h3>
+                          <p className="text-[11px] text-[#644180]">
+                            ເລືອກໝາຍເລກນາງສາວເພື່ອກວດບິນທັງໂຕອະນຸມັດແລ້ວ, ລໍຖ້າອະນຸມັດ, ແລະ ປະຕິເສດ
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <select
+                            value={txContestantFilter}
+                            onChange={(e) => setTxContestantFilter(e.target.value)}
+                            className="px-3 py-1.5 rounded-xl bg-white border border-[#9333ea]/30 text-xs font-black text-[#240638] cursor-pointer"
                           >
-                            {tab.label}
+                            <option value="ALL">ທຸກໝາຍເລກ (HM 01–20)</option>
+                            {contestants.map((c) => (
+                              <option key={c.id} value={c.code}>
+                                {c.code} • {c.name}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="relative">
+                            <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                            <input
+                              type="text"
+                              value={txSearch}
+                              onChange={(e) => setTxSearch(e.target.value)}
+                              placeholder="ຄົ້ນຫາຊື່, ເບີໂທ, ບິນ..."
+                              className="pl-8 pr-3 py-1.5 rounded-xl bg-white border border-[#9333ea]/30 text-xs text-[#240638] w-44"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-1 bg-white p-1 rounded-xl border border-[#9333ea]/25 text-xs">
+                          {[
+                            { id: "ALL", label: `ທັງໝົດ (${allTx.filter((t) => txContestantFilter === "ALL" || t.contestant_code === txContestantFilter).length})` },
+                            { id: "APPROVED", label: `ອະນຸມັດ (${allTx.filter((t) => t.status === "APPROVED" && (txContestantFilter === "ALL" || t.contestant_code === txContestantFilter)).length})` },
+                            { id: "NO_SLIP", label: `⚠️ ອະນຸມັດບໍ່ມີບິນ (${approvedNoSlip.length})` },
+                            { id: "PENDING", label: `ລໍຖ້າ (${allTx.filter((t) => t.status === "PENDING" && (txContestantFilter === "ALL" || t.contestant_code === txContestantFilter)).length})` },
+                            { id: "REJECTED", label: `ປະຕິເສດ (${allTx.filter((t) => t.status === "REJECTED" && (txContestantFilter === "ALL" || t.contestant_code === txContestantFilter)).length})` },
+                          ].map((tab) => (
+                            <button
+                              key={tab.id}
+                              type="button"
+                              onClick={() => setReportFilter(tab.id)}
+                              className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
+                                reportFilter === tab.id
+                                  ? tab.id === "NO_SLIP"
+                                    ? "bg-rose-600 text-white"
+                                    : "logo-exact-bg text-white"
+                                  : "text-[#644180] hover:text-[#240638]"
+                              }`}
+                            >
+                              {tab.label}
+                            </button>
+                          ))}
+                        </div>
+                        {txContestantFilter !== "ALL" && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTxContestantFilter("ALL");
+                              setTxSearch("");
+                            }}
+                            className="text-[11px] font-bold text-[#7e1db3] hover:underline cursor-pointer"
+                          >
+                            ✕ ສະແດງທຸກໝາຍເລກຄືນ
                           </button>
-                        ))}
+                        )}
                       </div>
                     </div>
 
@@ -1691,23 +1761,47 @@ export default function AdminDashboardPage() {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-[#9333ea]/25 shadow-sm text-xs self-start sm:self-auto">
-                  {["ALL", "PENDING", "APPROVED", "REJECTED"].map((f) => (
-                    <button
-                      key={f}
-                      onClick={() => setTxFilter(f)}
-                      className={`px-3 py-1.5 rounded-lg font-bold transition whitespace-nowrap cursor-pointer ${
-                        txFilter === f
-                          ? "bg-[#520d7a] text-white shadow"
-                          : "text-[#644180] hover:bg-[#f6effc]"
-                      }`}
-                    >
-                      {f === "ALL" && "ທັງໝົດ"}
-                      {f === "PENDING" && `ລໍຖ້າ (${stats.pending_count})`}
-                      {f === "APPROVED" && "ອະນຸມັດແລ້ວ"}
-                      {f === "REJECTED" && "ປະຕິເສດ"}
-                    </button>
-                  ))}
+                <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                  <select
+                    value={txContestantFilter}
+                    onChange={(e) => setTxContestantFilter(e.target.value)}
+                    className="px-3 py-1.5 rounded-xl bg-white border border-[#9333ea]/25 shadow-sm text-xs font-black text-[#240638] cursor-pointer"
+                  >
+                    <option value="ALL">ທຸກໝາຍເລກ (HM 01–20)</option>
+                    {contestants.map((c) => (
+                      <option key={c.id} value={c.code}>
+                        {c.code} • {c.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={txSearch}
+                      onChange={(e) => setTxSearch(e.target.value)}
+                      placeholder="ຄົ້ນຫາຊື່, ເບີໂທ, ບິນ..."
+                      className="pl-8 pr-3 py-1.5 rounded-xl bg-white border border-[#9333ea]/25 shadow-sm text-xs text-[#240638] w-40 sm:w-48"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-[#9333ea]/25 shadow-sm text-xs">
+                    {["ALL", "PENDING", "APPROVED", "REJECTED"].map((f) => (
+                      <button
+                        key={f}
+                        onClick={() => setTxFilter(f)}
+                        className={`px-3 py-1.5 rounded-lg font-bold transition whitespace-nowrap cursor-pointer ${
+                          txFilter === f
+                            ? "bg-[#520d7a] text-white shadow"
+                            : "text-[#644180] hover:bg-[#f6effc]"
+                        }`}
+                      >
+                        {f === "ALL" && "ທັງໝົດ"}
+                        {f === "PENDING" && `ລໍຖ້າ (${stats.pending_count})`}
+                        {f === "APPROVED" && "ອະນຸມັດແລ້ວ"}
+                        {f === "REJECTED" && "ປະຕິເສດ"}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
