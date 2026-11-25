@@ -13,6 +13,26 @@ import {
 
 export const dynamic = "force-dynamic";
 
+function deductTxVotesSafely(db, tx) {
+  if (tx.status !== "APPROVED") return;
+  const c = db.prepare("SELECT total_votes FROM contestants WHERE id = ?").get(tx.contestant_id);
+  const currentTotal = Number(c?.total_votes || 0);
+  const remainingRow = db
+    .prepare(
+      "SELECT COALESCE(SUM(points_added), 0) as s FROM vote_transactions WHERE contestant_id = ? AND status = 'APPROVED'"
+    )
+    .get(tx.contestant_id);
+  const remainingApproved = Number(remainingRow?.s || 0);
+  const nextTotal =
+    currentTotal >= tx.points_added
+      ? currentTotal - tx.points_added
+      : Math.min(currentTotal, remainingApproved);
+  db.prepare("UPDATE contestants SET total_votes = ? WHERE id = ?").run(
+    Math.max(0, nextTotal),
+    tx.contestant_id
+  );
+}
+
 export async function GET(req) {
   const auth = verifyAdminRequest(req);
   if (!auth.valid) {
@@ -176,13 +196,8 @@ export async function POST(req) {
         return NextResponse.json({ error: "ບໍ່ພົບລາຍການບິນນີ້" }, { status: 404 });
       }
 
-      if (tx.status === "APPROVED") {
-        db.prepare(
-          "UPDATE contestants SET total_votes = MAX(0, total_votes - ?) WHERE id = ?"
-        ).run(tx.points_added, tx.contestant_id);
-      }
-
       db.prepare("UPDATE vote_transactions SET status = 'REJECTED' WHERE id = ?").run(txId);
+      deductTxVotesSafely(db, tx);
       return NextResponse.json({ success: true, message: "ປະຕິເສດລາຍການບິນແລ້ວ" });
     }
 
@@ -196,13 +211,8 @@ export async function POST(req) {
         return NextResponse.json({ error: "ບໍ່ພົບລາຍການບິນນີ້" }, { status: 404 });
       }
 
-      if (tx.status === "APPROVED") {
-        db.prepare(
-          "UPDATE contestants SET total_votes = MAX(0, total_votes - ?) WHERE id = ?"
-        ).run(tx.points_added, tx.contestant_id);
-      }
-
       db.prepare("DELETE FROM vote_transactions WHERE id = ?").run(txId);
+      deductTxVotesSafely(db, tx);
       return NextResponse.json({ success: true, message: `ລຶບລາຍການ #${txId} ອອກສຳເລັດແລ້ວ` });
     }
 
