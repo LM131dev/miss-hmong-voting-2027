@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { getDb } from "../../../lib/db";
+import fs from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
 import {
   verifyAdminRequest,
   getAdminCredentials,
@@ -117,6 +120,23 @@ export async function POST(req) {
           ORDER BY t.id DESC
         `)
         .all();
+
+      // Backfill SHA-256 hash for slip images on disk so duplicate slips are caught even for older uploads
+      const updateHash = db.prepare("UPDATE vote_transactions SET slip_hash = ? WHERE id = ?");
+      for (const tx of allTransactions) {
+        if (!tx.slip_hash && tx.slip_image_url && String(tx.slip_image_url).startsWith("/uploads/")) {
+          try {
+            const rel = String(tx.slip_image_url).replace(/^\/+/, "");
+            const filePath = path.join(process.cwd(), "public", rel);
+            if (fs.existsSync(filePath)) {
+              const hash = crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
+              tx.slip_hash = hash;
+              updateHash.run(hash, tx.id);
+            }
+          } catch {}
+        }
+      }
+
       return NextResponse.json({
         success: true,
         transactions: allTransactions,

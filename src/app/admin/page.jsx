@@ -1140,6 +1140,28 @@ export default function AdminDashboardPage() {
               const totalApprovedVotes = sumVotes(approvedTx);
               const pendingAmt = sumAmount(pendingTx);
               const pendingVotes = sumVotes(pendingTx);
+              // Group approved transactions by slip_hash to catch exact duplicate bank slips
+              const hashGroups = {};
+              for (const t of approvedWithSlip) {
+                if (!t.slip_hash) continue;
+                if (!hashGroups[t.slip_hash]) hashGroups[t.slip_hash] = [];
+                hashGroups[t.slip_hash].push(t);
+              }
+              const duplicateHashes = new Set(
+                Object.keys(hashGroups).filter((h) => hashGroups[h].length > 1)
+              );
+              let dupExtraLak = 0;
+              let dupExtraVotes = 0;
+              let dupExtraCount = 0;
+              for (const h of duplicateHashes) {
+                const sorted = [...hashGroups[h]].sort((a, b) => a.id - b.id);
+                for (let i = 1; i < sorted.length; i++) {
+                  dupExtraCount += 1;
+                  dupExtraLak += Number(sorted[i].amount_lak || 0);
+                  dupExtraVotes += Number(sorted[i].points_added || 0);
+                }
+              }
+
               const leaderboardTotalVotes = contestants.reduce(
                 (s, c) => s + Number(c.total_votes || 0),
                 0
@@ -1193,7 +1215,20 @@ export default function AdminDashboardPage() {
                 })
                 .filter((c) => c.total_votes > 0 || c.txCount > 0 || c.pendingCount > 0);
 
-              const filteredLedger = allTx.filter((t) => matchesTxFilter(t, reportFilter));
+              const filteredLedger = allTx
+                .filter((t) => {
+                  if (reportFilter === "DUPLICATES") {
+                    return Boolean(t.slip_hash && duplicateHashes.has(t.slip_hash));
+                  }
+                  return matchesTxFilter(t, reportFilter);
+                })
+                .sort((a, b) => {
+                  if (reportFilter === "DUPLICATES") {
+                    const cmp = String(a.slip_hash || "").localeCompare(String(b.slip_hash || ""));
+                    return cmp !== 0 ? cmp : a.id - b.id;
+                  }
+                  return 0;
+                });
 
               const handleExportTxCsv = () => {
                 exportCsvFile(
@@ -1308,6 +1343,31 @@ export default function AdminDashboardPage() {
                       </button>
                     </div>
                   </div>
+
+                  {/* Duplicate Slip Alert Banner */}
+                  {duplicateHashes.size > 0 && (
+                    <div
+                      onClick={() => setReportFilter("DUPLICATES")}
+                      className="rounded-3xl bg-amber-50 border-2 border-amber-400 p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer hover:bg-amber-100/70 transition"
+                    >
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
+                        <div>
+                          <h3 className="font-black text-sm text-amber-900">
+                            🔁 ກວດພົບຮູບໃບບິນຊ້ຳກັນ {duplicateHashes.size} ກຸ່ມ (ບິນຊ້ຳເກີນ {dupExtraCount} ໃບ)!
+                          </h3>
+                          <p className="text-xs text-amber-800 mt-0.5">
+                            ຍອດເງິນຈາກບິນຮູບດຽວກັນທີ່ອະນຸມັດຊ້ຳ:{" "}
+                            <strong className="font-black">{dupExtraLak.toLocaleString()} ₭</strong>{" "}
+                            (+{dupExtraVotes.toLocaleString()} Votes) — ກົດເພື່ອກວດທຽບ ແລະ ປະຕິເສດບິນຊ້ຳ
+                          </p>
+                        </div>
+                      </div>
+                      <span className="px-3.5 py-2 rounded-xl bg-amber-600 text-white text-xs font-black shrink-0 text-center">
+                        ເບິ່ງບິນຊ້ຳກັນ ({approvedWithSlip.filter((t) => duplicateHashes.has(t.slip_hash)).length}) →
+                      </span>
+                    </div>
+                  )}
 
                   {/* 4 Audit Reconciliation Cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1585,6 +1645,7 @@ export default function AdminDashboardPage() {
                           {[
                             { id: "ALL", label: `ທັງໝົດ (${allTx.filter((t) => txContestantFilter === "ALL" || t.contestant_code === txContestantFilter).length})` },
                             { id: "APPROVED", label: `ອະນຸມັດ (${allTx.filter((t) => t.status === "APPROVED" && (txContestantFilter === "ALL" || t.contestant_code === txContestantFilter)).length})` },
+                            { id: "DUPLICATES", label: `🔁 ບິນຮູບຊ້ຳ (${approvedWithSlip.filter((t) => duplicateHashes.has(t.slip_hash)).length})` },
                             { id: "NO_SLIP", label: `⚠️ ອະນຸມັດບໍ່ມີບິນ (${approvedNoSlip.length})` },
                             { id: "PENDING", label: `ລໍຖ້າ (${allTx.filter((t) => t.status === "PENDING" && (txContestantFilter === "ALL" || t.contestant_code === txContestantFilter)).length})` },
                             { id: "REJECTED", label: `ປະຕິເສດ (${allTx.filter((t) => t.status === "REJECTED" && (txContestantFilter === "ALL" || t.contestant_code === txContestantFilter)).length})` },
@@ -1597,6 +1658,8 @@ export default function AdminDashboardPage() {
                                 reportFilter === tab.id
                                   ? tab.id === "NO_SLIP"
                                     ? "bg-rose-600 text-white"
+                                    : tab.id === "DUPLICATES"
+                                    ? "bg-amber-600 text-white"
                                     : "logo-exact-bg text-white"
                                   : "text-[#644180] hover:text-[#240638]"
                               }`}
@@ -1634,11 +1697,17 @@ export default function AdminDashboardPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                          {filteredLedger.map((tx) => (
+                          {filteredLedger.map((tx) => {
+                            const isDup = Boolean(tx.slip_hash && duplicateHashes.has(tx.slip_hash));
+                            return (
                             <tr
                               key={tx.id}
                               className={`hover:bg-[#faf6fd] ${
-                                tx.status === "APPROVED" && !tx.slip_image_url ? "bg-rose-50/50" : ""
+                                tx.status === "APPROVED" && !tx.slip_image_url
+                                  ? "bg-rose-50/50"
+                                  : isDup
+                                  ? "bg-amber-50/70"
+                                  : ""
                               }`}
                             >
                               <td className="py-2 px-3 whitespace-nowrap">
@@ -1667,14 +1736,21 @@ export default function AdminDashboardPage() {
                               </td>
                               <td className="py-2 px-3 text-center">
                                 {tx.slip_image_url ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => setViewingSlip(tx)}
-                                    className="px-2 py-1 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer"
-                                  >
-                                    <Eye className="w-3 h-3" />
-                                    <span>ເບິ່ງບິນ</span>
-                                  </button>
+                                  <div className="inline-flex flex-col items-center gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => setViewingSlip(tx)}
+                                      className="px-2 py-1 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer"
+                                    >
+                                      <Eye className="w-3 h-3" />
+                                      <span>ເບິ່ງບິນ</span>
+                                    </button>
+                                    {isDup && (
+                                      <span className="px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 font-black text-[9px]">
+                                        🔁 ຮູບຊ້ຳ ({tx.slip_hash.slice(0, 6)})
+                                      </span>
+                                    )}
+                                  </div>
                                 ) : (
                                   <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-700 font-black text-[10px]">
                                     ❌ ບໍ່ມີຮູບບິນ
@@ -1739,7 +1815,8 @@ export default function AdminDashboardPage() {
                                 </div>
                               </td>
                             </tr>
-                          ))}
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>

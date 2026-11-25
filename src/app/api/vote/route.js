@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getDb } from "../../../lib/db";
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -79,6 +80,7 @@ export async function POST(req) {
     const nowStr = new Date().toISOString().replace("T", " ").slice(0, 19);
 
     let finalSlipUrl = String(slip_image_url || "").trim();
+    let slipHash = "";
     if (!finalSlipUrl || (!finalSlipUrl.startsWith("data:image/") && !finalSlipUrl.startsWith("/uploads/"))) {
       return NextResponse.json(
         { error: "ກະລຸນາອັບໂຫຼດຮູບໃບບິນໂອນເງິນ (Bank Slip) ກ່ອນຢືນຢັນການໂຫວດ" },
@@ -109,6 +111,22 @@ export async function POST(req) {
             { status: 400 }
           );
         }
+
+        slipHash = crypto.createHash("sha256").update(buffer).digest("hex");
+        const dupTx = db
+          .prepare(
+            "SELECT id, payment_ref, status FROM vote_transactions WHERE slip_hash = ? AND status IN ('PENDING', 'APPROVED') LIMIT 1"
+          )
+          .get(slipHash);
+        if (dupTx) {
+          return NextResponse.json(
+            {
+              error: `ຂໍອະໄພ: ຮູບໃບບິນນີ້ເຄີຍຖືກອັບໂຫຼດໃນລະບົບແລ້ວ (ບິນ #${dupTx.id} / ${dupTx.payment_ref})! ກະລຸນາແນບຮູບໃບບິນໂອນເງິນໃໝ່.`,
+            },
+            { status: 400 }
+          );
+        }
+
         const filename = `slip_${Date.now()}_${Math.floor(Math.random() * 10000)}.${ext}`;
         const dirPath = path.join(process.cwd(), "public", "uploads", "slips");
         if (!fs.existsSync(dirPath)) {
@@ -129,8 +147,8 @@ export async function POST(req) {
     const insertResult = db
       .prepare(`
         INSERT INTO vote_transactions
-        (contestant_id, package_id, voter_name, voter_phone, cheer_message, points_added, amount_lak, payment_ref, slip_image_url, status, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (contestant_id, package_id, voter_name, voter_phone, cheer_message, points_added, amount_lak, payment_ref, slip_image_url, slip_hash, status, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .run(
         contestant.id,
@@ -142,6 +160,7 @@ export async function POST(req) {
         pkg.price_lak,
         cleanRef,
         finalSlipUrl,
+        slipHash,
         status,
         nowStr
       );

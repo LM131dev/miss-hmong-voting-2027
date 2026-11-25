@@ -490,6 +490,9 @@ function initSchema(db) {
   try {
     db.exec("ALTER TABLE vote_transactions ADD COLUMN slip_image_url TEXT NOT NULL DEFAULT ''");
   } catch {}
+  try {
+    db.exec("ALTER TABLE vote_transactions ADD COLUMN slip_hash TEXT NOT NULL DEFAULT ''");
+  } catch {}
 
   const countRow = db.prepare("SELECT COUNT(*) as count FROM contestants").get();
   if (!countRow || countRow.count === 0) {
